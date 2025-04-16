@@ -2,19 +2,23 @@ package factory
 
 import (
 	"backend/client"
+	"backend/config"
 	"backend/db"
 	"backend/interfaces"
 	"backend/repositories"
 	"backend/services"
-	"os"
 )
 
 // ServiceFactory crea instancias de servicios
-type ServiceFactory struct{}
+type ServiceFactory struct {
+	config *config.Config
+}
 
 // NewServiceFactory crea una nueva fábrica de servicios
 func NewServiceFactory() *ServiceFactory {
-	return &ServiceFactory{}
+	return &ServiceFactory{
+		config: config.GetConfig(),
+	}
 }
 
 // CreateStockService crea y devuelve un servicio de stocks
@@ -29,7 +33,7 @@ func (f *ServiceFactory) CreateStockService() (interfaces.StockService, error) {
 	repo := repositories.NewStockRepository(dbHandler)
 
 	// Crear cliente API
-	apiClient := client.NewAPIConsumer(os.Getenv("API_URL"))
+	apiClient := client.NewAPIConsumer(f.config.API.URL)
 
 	// Crear y devolver el servicio
 	return services.NewStockService(repo, apiClient), nil

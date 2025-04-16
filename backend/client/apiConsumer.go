@@ -4,11 +4,11 @@
 package client
 
 import (
+	"backend/config"
 	"backend/interfaces"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -48,10 +48,11 @@ type HTTPClient interface {
 
 // NewAPIConsumer crea una nueva instancia del consumidor de API
 func NewAPIConsumer(baseURL string) *APIConsumer {
+	cfg := config.GetConfig()
 	return &APIConsumer{
 		BaseURL: baseURL,
 		Client:  &http.Client{Timeout: 10 * time.Second},
-		Token:   os.Getenv("API_TOKEN"),
+		Token:   cfg.API.Token,
 	}
 }
 

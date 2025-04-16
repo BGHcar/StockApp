@@ -49,6 +49,7 @@ type StockRepository interface {
 	GetRatingCounts() (map[string]int, error)
 	InsertStock(stock models.Stock) error
 	InsertStocks(stocks []models.Stock) (int, map[string]string, error)
+	InsertStocksParallel(stocks []models.Stock) (int, map[string]string, error)
 	TruncateTable() error
 	SearchStocks(query string) ([]models.Stock, error)
 }

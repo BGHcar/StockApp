@@ -5,6 +5,9 @@ import (
 	"backend/models"
 	"fmt"
 	"log"
+	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 // StockRepository implementa la interfaz Repository
@@ -248,12 +251,13 @@ func (r *StockRepository) InsertStocks(stocks []models.Stock) (int, map[string]s
 	failedTickers := make(map[string]string)
 
 	for _, stock := range stocks {
+		// Modificar para usar la clave primaria compuesta (ticker, time)
 		_, err := r.db.Exec(`
             INSERT INTO stocks (
                 ticker, company, target_from, target_to, 
                 action, brokerage, rating_from, rating_to, time
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            ON CONFLICT (ticker) DO NOTHING
+            ON CONFLICT (ticker, time) DO NOTHING
         `,
 			stock.Ticker, stock.Company,
 			stock.TargetFrom, stock.TargetTo,
@@ -281,6 +285,123 @@ func (r *StockRepository) InsertStocks(stocks []models.Stock) (int, map[string]s
 	}
 
 	return inserted, failedTickers, nil
+}
+
+// InsertStocksParallel inserta múltiples registros de stock en paralelo usando workers
+func (r *StockRepository) InsertStocksParallel(stocks []models.Stock) (int, map[string]string, error) {
+	inserted := int32(0)
+	insertedTickers := sync.Map{}
+	failedTickers := sync.Map{}
+
+	// Número de workers - ajustar según la capacidad del cluster y latencia
+	numWorkers := 10
+	batchSize := 50 // Tamaño de cada lote para inserción por lotes
+
+	// Preparar la consulta para inserción por lotes
+	// Esto reduce drásticamente el número de viajes de red
+	insertQuery := `
+        INSERT INTO stocks (
+            ticker, company, target_from, target_to, 
+            action, brokerage, rating_from, rating_to, time
+        ) VALUES 
+    `
+
+	// Dividir los stocks en lotes
+	var stockBatches [][]models.Stock
+	for i := 0; i < len(stocks); i += batchSize {
+		end := i + batchSize
+		if end > len(stocks) {
+			end = len(stocks)
+		}
+		stockBatches = append(stockBatches, stocks[i:end])
+	}
+
+	log.Printf("Procesando %d registros en %d lotes con %d workers",
+		len(stocks), len(stockBatches), numWorkers)
+
+	// Canal para distribuir lotes a workers
+	batchChan := make(chan []models.Stock, len(stockBatches))
+	var wg sync.WaitGroup
+
+	// Iniciar workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(workerId int) {
+			defer wg.Done()
+
+			// Cada worker procesa lotes del canal
+			for batch := range batchChan {
+				if len(batch) == 0 {
+					continue
+				}
+
+				// Construir la consulta para este lote
+				query := insertQuery
+				var values []interface{}
+				placeholders := []string{}
+
+				for i, stock := range batch {
+					// Crear placeholders para consulta preparada
+					baseIdx := i * 9
+					phRow := fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+						baseIdx+1, baseIdx+2, baseIdx+3, baseIdx+4,
+						baseIdx+5, baseIdx+6, baseIdx+7, baseIdx+8, baseIdx+9)
+					placeholders = append(placeholders, phRow)
+
+					// Agregar valores para esta fila
+					values = append(values,
+						stock.Ticker, stock.Company,
+						stock.TargetFrom, stock.TargetTo,
+						stock.Action, stock.Brokerage,
+						stock.RatingFrom, stock.RatingTo, stock.Time)
+
+					// Registrar este ticker como procesado
+					ticker := stock.Ticker
+					if _, loaded := insertedTickers.LoadOrStore(ticker, true); !loaded {
+						atomic.AddInt32(&inserted, 1)
+					}
+				}
+
+				// Finalizar la consulta con ON CONFLICT
+				query += strings.Join(placeholders, ", ")
+				query += " ON CONFLICT (ticker, time) DO NOTHING"
+
+				// Ejecutar la inserción por lotes
+				_, err := r.db.Exec(query, values...)
+				if err != nil {
+					log.Printf("Error en worker %d insertando lote: %v", workerId, err)
+					// Registrar error para cada ticker en este lote
+					for _, stock := range batch {
+						failedTickers.Store(stock.Ticker, err.Error())
+					}
+				}
+			}
+		}(i)
+	}
+
+	// Enviar todos los lotes a los workers
+	for _, batch := range stockBatches {
+		batchChan <- batch
+	}
+
+	// Cerrar el canal y esperar a que terminen todos los workers
+	close(batchChan)
+	wg.Wait()
+
+	// Convertir resultados de sync.Map a map estándar
+	resultInserted := int(inserted)
+	resultFailed := make(map[string]string)
+
+	failedTickers.Range(func(key, value interface{}) bool {
+		resultFailed[key.(string)] = value.(string)
+		return true
+	})
+
+	// Registrar progreso final
+	log.Printf("Inserción paralela completada: %d elementos insertados, %d errores",
+		resultInserted, len(resultFailed))
+
+	return resultInserted, resultFailed, nil
 }
 
 // Añadimos un nuevo método para búsqueda general por compañía o ticker
