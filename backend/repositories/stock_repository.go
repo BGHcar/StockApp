@@ -78,8 +78,7 @@ func (r *StockRepository) GetCount() (int, error) {
 
 // GetByTicker obtiene un stock específico por su ticker
 func (r *StockRepository) GetByTicker(ticker string) (*models.Stock, error) {
-	// Para GetByTicker, mejor usar una coincidencia exacta pero insensible a mayúsculas
-	// ya que el ticker es un identificador único
+	// Implementación actual
 	rows, err := r.db.Query(`
         SELECT ticker, company, target_from, target_to, 
                action, brokerage, rating_from, rating_to, time
