@@ -45,6 +45,8 @@ type StockRepository interface {
 	GetByTicker(ticker string) (*models.Stock, error)
 	GetByAction(action string) ([]models.Stock, error)
 	GetByRating(rating string) ([]models.Stock, error)
+	GetByBrokerage(brokerage string) ([]models.Stock, error)
+	GetByDateRange(startDate, endDate time.Time) ([]models.Stock, error)
 	GetActionCounts() (map[string]int, error)
 	GetRatingCounts() (map[string]int, error)
 	InsertStock(stock models.Stock) error
@@ -65,6 +67,8 @@ type StockService interface {
 	GetRatingStats() (map[string]int, error)
 	SyncStockData() (SyncResult, error)
 	SearchStocks(query string) ([]models.Stock, error)
+	GetStocksByBrokerage(brokerage string) ([]models.Stock, error)
+	GetStocksByDateRange(startDate, endDate time.Time) ([]models.Stock, error)
 }
 
 // SyncResult define el resultado de un proceso de sincronización

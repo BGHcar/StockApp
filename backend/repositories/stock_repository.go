@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // StockRepository implementa la interfaz Repository
@@ -228,6 +229,37 @@ func (r *StockRepository) GetRatingCounts() (map[string]int, error) {
 	return counts, nil
 }
 
+func (r *StockRepository) GetByBrokerage(brokerage string) ([]models.Stock, error) {
+	// Modificamos la consulta para usar ILIKE con comodines
+	rows, err := r.db.Query(`
+		SELECT ticker, company, target_from, target_to,
+			action, brokerage, rating_from, rating_to, time
+			FROM stocks 
+			WHERE brokerage ILIKE $1
+			ORDER BY time DESC
+	`, "%"+brokerage+"%") // Agregamos comodines antes y después
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []models.Stock
+	for rows.Next() {
+		var stock models.Stock
+		if err := rows.Scan(
+			&stock.Ticker, &stock.Company,
+			&stock.TargetFrom, &stock.TargetTo,
+			&stock.Action, &stock.Brokerage,
+			&stock.RatingFrom, &stock.RatingTo, &stock.Time,
+		); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, stock)
+	}
+	return stocks, nil
+}
+
 // InsertStock inserta un único registro de stock
 func (r *StockRepository) InsertStock(stock models.Stock) error {
 	_, err := r.db.Exec(`
@@ -402,6 +434,37 @@ func (r *StockRepository) InsertStocksParallel(stocks []models.Stock) (int, map[
 		resultInserted, len(resultFailed))
 
 	return resultInserted, resultFailed, nil
+}
+
+// GetByDateRange obtiene stocks dentro de un rango de fechas
+func (r *StockRepository) GetByDateRange(startDate, endDate time.Time) ([]models.Stock, error) {
+	rows, err := r.db.Query(`
+		SELECT ticker, company, target_from, target_to,
+			action, brokerage, rating_from, rating_to, time
+			FROM stocks
+			WHERE time BETWEEN $1 AND $2
+			ORDER BY time DESC
+	`, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []models.Stock
+	for rows.Next() {
+		var stock models.Stock
+		if err := rows.Scan(
+			&stock.Ticker, &stock.Company,
+			&stock.TargetFrom, &stock.TargetTo,
+			&stock.Action, &stock.Brokerage,
+			&stock.RatingFrom, &stock.RatingTo, &stock.Time,
+		); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, stock)
+	}
+
+	return stocks, nil
 }
 
 // Añadimos un nuevo método para búsqueda general por compañía o ticker

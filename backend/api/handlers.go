@@ -33,6 +33,7 @@ func SetupRoutes(r chi.Router) {
 	r.Get("/api/stats/actions", controller.GetActionStats)
 	r.Get("/api/stats/ratings", controller.GetRatingStats)
 	r.Get("/api/stats/count", controller.GetTotalCount)
+	r.Get("/api/stocks/brokerage/{brokerage}", controller.GetStocksByBrokerage)
 
 	// Nueva ruta de búsqueda
 	r.Get("/api/stocks/search/{query}", controller.SearchStocks)
@@ -133,7 +134,6 @@ func (c *StockController) GetStocksByAction(w http.ResponseWriter, r *http.Reque
 func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Request) {
 	rating := chi.URLParam(r, "rating")
 	if rating == "" {
-		// example: http://localhost:8080/api/stocks/rating/Buy
 		http.Error(w, "Rating parameter is required", http.StatusBadRequest)
 		return
 	}
@@ -152,6 +152,27 @@ func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Reque
 
 	respondJSON(w, stocks)
 }
+
+func (c * StockController) GetStocksByBrokerage(w http.ResponseWriter, r *http.Request) {
+	brokerage := chi.URLParam(r, "brokerage")
+	if brokerage == "" {
+		http.Error(w, "Brokerage parameter is required", http.StatusBadRequest)
+		return
+	}
+	service, err := c.factory.CreateStockService()
+	if err != nil {
+		http.Error(w, "Error creating service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	stocks, err := service.GetStocksByBrokerage(brokerage)
+	if err != nil {
+		http.Error(w, "Error fetching stocks: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, stocks)
+}
+
 
 func (c *StockController) GetActionStats(w http.ResponseWriter, r *http.Request) {
 	service, err := c.factory.CreateStockService()
@@ -200,6 +221,7 @@ func (c *StockController) GetTotalCount(w http.ResponseWriter, r *http.Request) 
 
 	respondJSON(w, map[string]int{"count": count})
 }
+
 
 // Helper function to respond with JSON
 func respondJSON(w http.ResponseWriter, data interface{}) {
