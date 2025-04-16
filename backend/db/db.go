@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,8 +56,7 @@ func NewDatabaseHandler() (*DBAdapter, error) {
 func getDatabaseConfig() string {
 	// Primero verificamos si hay una URL completa de base de datos
 	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL != "" && !strings.Contains(dbURL, "localhost") {
-		log.Println("Usando DATABASE_URL completa para conexión")
+	if dbURL != "" {
 		return dbURL
 	}
 
@@ -66,25 +66,36 @@ func getDatabaseConfig() string {
 	host := os.Getenv("CLUSTER_HOST")
 	port := os.Getenv("CLUSTER_PORT")
 	dbName := os.Getenv("CLUSTER_NAME")
+	sslMode := os.Getenv("DB_SSL_MODE")
 
-	if user != "" && password != "" && host != "" {
-		if port == "" {
-			port = "26257" // Puerto por defecto de CockroachDB
-		}
-		if dbName == "" {
-			dbName = "stock_data"
-		}
-
-		// Construir URL de conexión
-		connStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=require",
-			user, password, host, port, dbName)
-		log.Println("URL de conexión a cluster construida desde variables de entorno")
-		return connStr
+	// Verificar que todos los parámetros necesarios están presentes
+	if user == "" || password == "" || host == "" {
+		log.Println("ADVERTENCIA: Configuración de base de datos incompleta en variables de entorno")
+		return ""
 	}
 
-	// Si no hay configuración para cluster, usamos conexión local
-	log.Println("ADVERTENCIA: No se encontró configuración válida para cluster, usando conexión local")
-	return "postgresql://root@localhost:26257/stock_data?sslmode=disable"
+	// Valores por defecto solo si no están definidos en variables de entorno
+	if port == "" {
+		port = os.Getenv("DB_DEFAULT_PORT")
+	}
+
+	if dbName == "" {
+		dbName = os.Getenv("DB_DEFAULT_NAME")
+	}
+
+	if sslMode == "" {
+		sslMode = os.Getenv("DB_DEFAULT_SSL_MODE")
+	}
+
+	// Si falta algún componente crítico después de intentar usar valores por defecto
+	if port == "" || dbName == "" || sslMode == "" {
+		log.Println("ADVERTENCIA: Faltan valores críticos para la conexión a base de datos")
+		return ""
+	}
+
+	// Construir URL de conexión
+	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
+		user, password, host, port, dbName, sslMode)
 }
 
 // InitDB inicializa la conexión a la base de datos
@@ -93,58 +104,62 @@ func InitDB() {
 
 	// Obtenemos la configuración de conexión
 	connStr := getDatabaseConfig()
+	if connStr == "" {
+		log.Fatal("No se pudo obtener una cadena de conexión válida. Verifique las variables de entorno.")
+	}
 
-	log.Printf("Conectando a base de datos: %s", sanitizeConnectionString(connStr))
+	// No mostramos ninguna información sobre la cadena de conexión
+	log.Println("Iniciando conexión a base de datos...")
 
 	// Abrimos la conexión
 	DB, err = sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatalf("Error connecting to database: %v", err)
+		log.Fatal("Error al conectar con la base de datos. Verifique las credenciales y la conectividad.")
 	}
 
-	// Configuración optimizada del pool para conexiones remotas
-	// Aumentamos el número de conexiones para soportar operaciones paralelas
-	if strings.Contains(connStr, "cockroachlabs.cloud") {
-		// Configuración para cluster remoto
-		DB.SetMaxOpenConns(25) // Más conexiones para paralelismo
-		DB.SetMaxIdleConns(10) // Mantener más conexiones inactivas
-		DB.SetConnMaxLifetime(10 * time.Minute)
-		DB.SetConnMaxIdleTime(5 * time.Minute)
-	} else {
-		// Configuración para base de datos local
-		DB.SetMaxOpenConns(10)
-		DB.SetMaxIdleConns(5)
-		DB.SetConnMaxLifetime(5 * time.Minute)
-		DB.SetConnMaxIdleTime(1 * time.Minute)
-	}
+	// Configuración del pool desde variables de entorno
+	maxOpenConns := getEnvAsInt("DB_MAX_OPEN_CONNS", 10)
+	maxIdleConns := getEnvAsInt("DB_MAX_IDLE_CONNS", 5)
+	connMaxLifetimeMin := getEnvAsInt("DB_CONN_MAX_LIFETIME_MIN", 5)
+	connMaxIdleTimeMin := getEnvAsInt("DB_CONN_MAX_IDLE_TIME_MIN", 3)
+
+	// Aplicar configuración
+	DB.SetMaxOpenConns(maxOpenConns)
+	DB.SetMaxIdleConns(maxIdleConns)
+	DB.SetConnMaxLifetime(time.Duration(connMaxLifetimeMin) * time.Minute)
+	DB.SetConnMaxIdleTime(time.Duration(connMaxIdleTimeMin) * time.Minute)
 
 	// Verificamos la conexión
 	if err = DB.Ping(); err != nil {
-		log.Fatalf("Could not ping database: %v", err)
+		log.Fatal("No se pudo establecer comunicación con la base de datos.")
 	}
 
-	log.Println("Conectado a la base de datos exitosamente")
+	log.Println("Conexión a base de datos establecida correctamente")
 
-	// Crear la tabla si no existe
-	_, err = DB.Exec(`
-		CREATE TABLE IF NOT EXISTS stocks (
-			ticker TEXT NOT NULL,
-			company TEXT,
-			target_from TEXT,
-			target_to TEXT,
-			action TEXT,
-			brokerage TEXT,
-			rating_from TEXT,
-			rating_to TEXT,
-			time TIMESTAMP NOT NULL,
-			PRIMARY KEY (ticker, time)
-		)
-	`)
-	if err != nil {
-		log.Fatalf("Error creating table: %v", err)
+	// Crear la tabla si no existe, usando una consulta parametrizada desde un archivo o variable de entorno
+	createTableSQL := os.Getenv("DB_CREATE_TABLE_SQL")
+	if createTableSQL == "" {
+		// Si no se proporciona, usar una consulta básica
+		createTableSQL = `
+        CREATE TABLE IF NOT EXISTS stocks (
+            ticker TEXT NOT NULL,
+            company TEXT,
+            target_from TEXT,
+            target_to TEXT,
+            action TEXT,
+            brokerage TEXT,
+            rating_from TEXT,
+            rating_to TEXT,
+            time TIMESTAMP NOT NULL,
+            PRIMARY KEY (ticker, time)
+        )`
 	}
 
-	log.Println("Estructura de tabla verificada/creada correctamente")
+	if _, err = DB.Exec(createTableSQL); err != nil {
+		log.Printf("Error al preparar estructura de datos: %v", err)
+	} else {
+		log.Println("Estructura de datos verificada correctamente")
+	}
 }
 
 // CloseDB cierra la conexión a la base de datos
@@ -170,4 +185,13 @@ func sanitizeConnectionString(connStr string) string {
 
 	// Para cualquier otro caso
 	return "[conexión de base de datos configurada]"
+}
+
+// Helper para obtener variables de entorno como enteros
+func getEnvAsInt(name string, defaultVal int) int {
+	valueStr := os.Getenv(name)
+	if value, err := strconv.Atoi(valueStr); err == nil {
+		return value
+	}
+	return defaultVal
 }
