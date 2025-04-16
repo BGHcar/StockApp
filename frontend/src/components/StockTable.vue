@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { defineProps } from 'vue'
-import type { Stock } from '@/types/Stock'
+import type { Stock } from '@/types/stock'
 import type { TableHeader } from '@/types/table'
 import BaseTable from './base/BaseTable.vue'
 import BaseScroll from './base/BaseScroll.vue'
