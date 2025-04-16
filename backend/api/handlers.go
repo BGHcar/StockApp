@@ -33,6 +33,9 @@ func SetupRoutes(r chi.Router) {
 	r.Get("/api/stats/actions", controller.GetActionStats)
 	r.Get("/api/stats/ratings", controller.GetRatingStats)
 	r.Get("/api/stats/count", controller.GetTotalCount)
+
+	// Nueva ruta de búsqueda
+	r.Get("/api/stocks/search/{query}", controller.SearchStocks)
 }
 
 func (c *StockController) SyncHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +133,7 @@ func (c *StockController) GetStocksByAction(w http.ResponseWriter, r *http.Reque
 func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Request) {
 	rating := chi.URLParam(r, "rating")
 	if rating == "" {
+		// example: http://localhost:8080/api/stocks/rating/Buy
 		http.Error(w, "Rating parameter is required", http.StatusBadRequest)
 		return
 	}
@@ -204,4 +208,26 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (c *StockController) SearchStocks(w http.ResponseWriter, r *http.Request) {
+	query := chi.URLParam(r, "query")
+	if query == "" {
+		http.Error(w, "Query parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	service, err := c.factory.CreateStockService()
+	if err != nil {
+		http.Error(w, "Error creating service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	stocks, err := service.SearchStocks(query)
+	if err != nil {
+		http.Error(w, "Error searching stocks: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, stocks)
 }

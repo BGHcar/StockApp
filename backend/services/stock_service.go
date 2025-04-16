@@ -275,3 +275,8 @@ func (s *StockService) logSyncSummary(result interfaces.SyncResult) {
 		log.Println("\nNo se detectaron tickers duplicados en la API. La estructura actual de la tabla es adecuada.")
 	}
 }
+
+// SearchStocks realiza una búsqueda general por ticker, compañía o brokerage
+func (s *StockService) SearchStocks(query string) ([]models.Stock, error) {
+	return s.repo.SearchStocks(query)
+}

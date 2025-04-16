@@ -3,7 +3,6 @@ package repositories
 import (
 	"backend/interfaces"
 	"backend/models"
-	"database/sql"
 	"fmt"
 	"log"
 )
@@ -75,36 +74,50 @@ func (r *StockRepository) GetCount() (int, error) {
 
 // GetByTicker obtiene un stock específico por su ticker
 func (r *StockRepository) GetByTicker(ticker string) (*models.Stock, error) {
-	var stock models.Stock
-	err := r.db.QueryRow(`
+	// Para GetByTicker, mejor usar una coincidencia exacta pero insensible a mayúsculas
+	// ya que el ticker es un identificador único
+	rows, err := r.db.Query(`
         SELECT ticker, company, target_from, target_to, 
                action, brokerage, rating_from, rating_to, time
         FROM stocks
-        WHERE ticker = $1
-    `, ticker).Scan(
+        WHERE ticker ILIKE $1
+        ORDER BY time DESC
+    `, ticker)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Puede haber múltiples resultados si la clave primaria es compuesta
+	if !rows.Next() {
+		return nil, nil // No encontrado
+	}
+
+	var stock models.Stock
+	if err := rows.Scan(
 		&stock.Ticker, &stock.Company,
 		&stock.TargetFrom, &stock.TargetTo,
 		&stock.Action, &stock.Brokerage,
 		&stock.RatingFrom, &stock.RatingTo, &stock.Time,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // No se encontró el stock, no es un error
-		}
+	); err != nil {
 		return nil, err
 	}
+
 	return &stock, nil
 }
 
 // GetByAction obtiene stocks filtrados por tipo de acción
 func (r *StockRepository) GetByAction(action string) ([]models.Stock, error) {
+	// Modificamos la consulta para usar ILIKE con comodines
 	rows, err := r.db.Query(`
         SELECT ticker, company, target_from, target_to, 
                action, brokerage, rating_from, rating_to, time
         FROM stocks
-        WHERE action = $1
+        WHERE action ILIKE $1
         ORDER BY time DESC
-    `, action)
+    `, "%"+action+"%") // Agregamos comodines antes y después
+
 	if err != nil {
 		return nil, err
 	}
@@ -129,13 +142,15 @@ func (r *StockRepository) GetByAction(action string) ([]models.Stock, error) {
 
 // GetByRating obtiene stocks filtrados por rating
 func (r *StockRepository) GetByRating(rating string) ([]models.Stock, error) {
+	// Modificamos la consulta para usar ILIKE con comodines
 	rows, err := r.db.Query(`
         SELECT ticker, company, target_from, target_to, 
                action, brokerage, rating_from, rating_to, time
         FROM stocks
-        WHERE rating_to = $1
+        WHERE rating_to ILIKE $1
         ORDER BY time DESC
-    `, rating)
+    `, "%"+rating+"%") // Agregamos comodines antes y después
+
 	if err != nil {
 		return nil, err
 	}
@@ -266,4 +281,40 @@ func (r *StockRepository) InsertStocks(stocks []models.Stock) (int, map[string]s
 	}
 
 	return inserted, failedTickers, nil
+}
+
+// Añadimos un nuevo método para búsqueda general por compañía o ticker
+func (r *StockRepository) SearchStocks(query string) ([]models.Stock, error) {
+	rows, err := r.db.Query(`
+        SELECT ticker, company, target_from, target_to, 
+               action, brokerage, rating_from, rating_to, time
+        FROM stocks
+        WHERE 
+            ticker ILIKE $1 OR 
+            company ILIKE $1 OR 
+            brokerage ILIKE $1
+        ORDER BY time DESC
+        LIMIT 100
+    `, "%"+query+"%")
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []models.Stock
+	for rows.Next() {
+		var stock models.Stock
+		if err := rows.Scan(
+			&stock.Ticker, &stock.Company,
+			&stock.TargetFrom, &stock.TargetTo,
+			&stock.Action, &stock.Brokerage,
+			&stock.RatingFrom, &stock.RatingTo, &stock.Time,
+		); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, stock)
+	}
+
+	return stocks, nil
 }

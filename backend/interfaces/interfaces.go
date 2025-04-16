@@ -50,6 +50,7 @@ type StockRepository interface {
 	InsertStock(stock models.Stock) error
 	InsertStocks(stocks []models.Stock) (int, map[string]string, error)
 	TruncateTable() error
+	SearchStocks(query string) ([]models.Stock, error)
 }
 
 // Service define la interfaz para la lógica de negocio
@@ -62,6 +63,7 @@ type StockService interface {
 	GetActionStats() (map[string]int, error)
 	GetRatingStats() (map[string]int, error)
 	SyncStockData() (SyncResult, error)
+	SearchStocks(query string) ([]models.Stock, error)
 }
 
 // SyncResult define el resultado de un proceso de sincronización
