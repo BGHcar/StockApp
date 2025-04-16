@@ -17,7 +17,6 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start; /* Cambiar de 'center' a 'flex-start' */
-  padding-top: 2rem; /* Añadir padding superior en lugar de padding general */
 }
 
 /* Quitar los estilos globales de tabla que estaban interfiriendo */

@@ -7,7 +7,7 @@
     </h1>
     
     <div class="content">
-      <StockSearch @search="handleSearch" @reset="handleReset" class="component-container" />
+      <StockSearch @search="handleSearch" @reset="handleReset" class="search-container" />
       
       <div v-if="stockStore.loading" class="status-message">
         Cargando...
@@ -15,12 +15,18 @@
       <div v-else-if="stockStore.error" class="status-message error">
         {{ stockStore.error }}
       </div>
-      <StockTable 
-        v-else 
-        :stocks="stockStore.stocks" 
-        :headers="tableHeaders" 
-        class="component-container" 
-      />
+      <div v-else class="components-wrapper">
+        <StockTable 
+          :stocks="stockStore.stocks" 
+          :headers="tableHeaders" 
+          class="table-container" 
+        />
+        <StockRecommendations 
+          v-if="stockStore.stocks.length > 0" 
+          :stocks="stockStore.stocks" 
+          class="recommendations-container"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -31,6 +37,7 @@ import { useStockStore } from '@/stores/stockStore'
 import StockTable from '@/components/StockTable.vue'
 import StockSearch from '@/components/StockSearch.vue'
 import { searchStocks } from '@/services/stockService'
+import StockRecommendations from '@/components/StockRecommendations.vue'
 import type { TableHeader } from '@/types/table'
 
 const stockStore = useStockStore()
@@ -73,37 +80,87 @@ function handleReset() {
 <style scoped>
 .container {
   width: 100%;
-  max-width: 95vw; /* Reducimos un poco para tener margen mínimo */
-  margin: 0 auto; /* Centramos el contenedor */
+  max-width: 95vw;
+  margin: 0 auto; /* Cambiado de '0 0' a '0 auto' para centrar horizontalmente */
   padding: 0.5rem;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .title {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 2.5rem;
-  font-weight: bold;
+  font-size: 1.75rem; /* Reducido aún más */
+  font-weight: 900; /* Aumentar a 900 para una negrita más fuerte */
   color: white;
   text-align: center;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.25rem 0; /* Eliminar margen superior */
+  flex: 0 0 auto; /* No crecer */
+  letter-spacing: 0.05em; /* Añadir espaciado entre letras */
+  width: 100%; /* Asegurar que ocupe todo el ancho disponible */
+  text-transform: uppercase; /* Opcional: texto en mayúsculas */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); /* Sombra sutil para mejor legibilidad */
+}
+
+/* Específicamente para los spans dentro del título */
+.title span {
+  font-weight: 900; /* Asegurar que los spans también están en negrita */
+  padding: 0 0.1em; /* Añadir un poco de espacio horizontal */
 }
 
 .content {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  width: 100%; /* Aseguramos que ocupe todo el ancho */
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
 }
 
-.component-container {
-  width: 100%; /* Aseguramos que los componentes ocupen todo el ancho */
+.search-container {
+  width: 100%;
   border-radius: 8px;
   background: rgba(60, 16, 83, 0.95);
+  margin-bottom: 0.25rem;
+  flex: 0 0 auto; /* No crecer */
+}
+
+.components-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  max-height: calc(100vh - 150px); /* Limitar altura máxima */
+  height: 100%; /* Asegurar que ocupe todo el espacio disponible */
+}
+
+.table-container {
+  width: 100%;
+  border-radius: 8px;
+  background: rgba(60, 16, 83, 0.95);
+  flex: 1 1 auto; /* Cambiar a flex-grow: 1 para que ocupe el espacio restante */
+  min-height: 0; /* Permitir que se encoja si es necesario */
+  overflow: auto; /* Esta tendrá scroll */
+}
+
+.recommendations-container {
+  width: 100%;
+  border-radius: 8px;
+  background: rgba(60, 16, 83, 0.95);
+  flex: 0 0 auto; /* No crecer ni encoger, ajustarse al contenido */
+  max-height: none; /* Quitar la restricción de altura máxima */
+  overflow: visible; /* Sin scroll */
+  padding-bottom: 0.25rem;
 }
 
 .status-message {
   text-align: center;
-  padding: 1rem;
+  padding: 0.5rem;
   color: white;
+  flex: 0 0 auto; /* No crecer */
 }
 
 .error {

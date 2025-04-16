@@ -26,6 +26,10 @@ export async function searchStocks(type: string, query: string): Promise<Stock[]
     case 'company':
       url = `${API_URL}/stocks/company/${encodeURIComponent(query)}`
       break
+    case 'price':
+      const [min, max] = query.split('-').map(Number)
+      url = `${API_URL}/stocks/price-range/${min}/${max}`
+      break
     case 'general':
     default:
       url = `${API_URL}/stocks/search/${encodeURIComponent(query)}`

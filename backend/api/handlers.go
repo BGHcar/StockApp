@@ -4,6 +4,7 @@ import (
 	"backend/factory"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -35,8 +36,7 @@ func SetupRoutes(r chi.Router) {
 	r.Get("/api/stats/ratings", controller.GetRatingStats)
 	r.Get("/api/stats/count", controller.GetTotalCount)
 	r.Get("/api/stocks/brokerage/{brokerage}", controller.GetStocksByBrokerage)
-
-	// Nueva ruta de búsqueda
+	r.Get("/api/stocks/price-range/{min}/{max}", controller.GetStocksByPriceRange) // Nueva ruta
 	r.Get("/api/stocks/search/{query}", controller.SearchStocks)
 }
 
@@ -154,7 +154,7 @@ func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Reque
 	respondJSON(w, stocks)
 }
 
-func (c *StockController) GetStocksByCompany(w http.ResponseWriter, r *http.Request) {	
+func (c *StockController) GetStocksByCompany(w http.ResponseWriter, r *http.Request) {
 	company := chi.URLParam(r, "company")
 	if company == "" {
 		http.Error(w, "Company parameter is required", http.StatusBadRequest)
@@ -173,7 +173,6 @@ func (c *StockController) GetStocksByCompany(w http.ResponseWriter, r *http.Requ
 
 	respondJSON(w, stocks)
 }
-
 
 func (c *StockController) GetStocksByBrokerage(w http.ResponseWriter, r *http.Request) {
 	brokerage := chi.URLParam(r, "brokerage")
@@ -274,4 +273,50 @@ func (c *StockController) SearchStocks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Resto del código para búsquedas regulares...
+}
+
+func (c *StockController) GetStocksByPriceRange(w http.ResponseWriter, r *http.Request) {
+	// Obtener parámetros de la URL
+	minPrice := chi.URLParam(r, "min")
+	maxPrice := chi.URLParam(r, "max")
+
+	if minPrice == "" || maxPrice == "" {
+		http.Error(w, "Se requieren los parámetros min y max", http.StatusBadRequest)
+		return
+	}
+
+	service, err := c.factory.CreateStockService()
+	if err != nil {
+		http.Error(w, "Error creating service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Convertir precios a float para validación (aunque el servicio maneje strings)
+	_, errMin := parsePrice(minPrice)
+	_, errMax := parsePrice(maxPrice)
+
+	if errMin != nil || errMax != nil {
+		http.Error(w, "Los precios deben ser valores numéricos válidos", http.StatusBadRequest)
+		return
+	}
+
+	stocks, err := service.GetStocksByPriceRange(minPrice, maxPrice)
+	if err != nil {
+		http.Error(w, "Error fetching stocks by price range: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, stocks)
+}
+
+// Helper para parsear precios
+func parsePrice(price string) (float64, error) {
+	// Eliminar el símbolo de moneda si existe
+	priceStr := price
+	if len(priceStr) > 0 && (priceStr[0] == '$') {
+		priceStr = priceStr[1:]
+	}
+
+	// Intentar convertir a float
+	return strconv.ParseFloat(priceStr, 64)
 }

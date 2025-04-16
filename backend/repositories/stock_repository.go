@@ -231,7 +231,6 @@ func (r *StockRepository) GetByCompany(company string) ([]models.Stock, error) {
 	return stocks, nil
 }
 
-
 // GetRatingCounts obtiene conteos por tipo de rating
 func (r *StockRepository) GetRatingCounts() (map[string]int, error) {
 	rows, err := r.db.Query(`
@@ -510,6 +509,55 @@ func (r *StockRepository) SearchStocks(query string) ([]models.Stock, error) {
         LIMIT 100
     `, "%"+query+"%")
 
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []models.Stock
+	for rows.Next() {
+		var stock models.Stock
+		if err := rows.Scan(
+			&stock.Ticker, &stock.Company,
+			&stock.TargetFrom, &stock.TargetTo,
+			&stock.Action, &stock.Brokerage,
+			&stock.RatingFrom, &stock.RatingTo, &stock.Time,
+		); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, stock)
+	}
+
+	return stocks, nil
+}
+
+// GetByPriceRange obtiene stocks dentro de un rango de precios objetivo
+func (r *StockRepository) GetByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) {
+	// Preparar valores para la búsqueda en SQL
+	// Eliminar el símbolo $ de los valores si existe
+	minPriceClean := minPrice
+	maxPriceClean := maxPrice
+
+	if len(minPrice) > 0 && minPrice[0] == '$' {
+		minPriceClean = minPrice[1:]
+	}
+
+	if len(maxPrice) > 0 && maxPrice[0] == '$' {
+		maxPriceClean = maxPrice[1:]
+	}
+
+	// Crear expresión para extraer el valor numérico del campo target_to
+	query := `
+        SELECT ticker, company, target_from, target_to, 
+            action, brokerage, rating_from, rating_to, time
+        FROM stocks
+        WHERE 
+            regexp_replace(target_to, '[^0-9.]', '', 'g')::float 
+            BETWEEN $1::float AND $2::float
+        ORDER BY time DESC
+    `
+
+	rows, err := r.db.Query(query, minPriceClean, maxPriceClean)
 	if err != nil {
 		return nil, err
 	}

@@ -55,6 +55,7 @@ type StockRepository interface {
 	InsertStocksParallel(stocks []models.Stock) (int, map[string]string, error)
 	TruncateTable() error
 	SearchStocks(query string) ([]models.Stock, error)
+	GetByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) // Nueva función
 }
 
 // Service define la interfaz para la lógica de negocio
@@ -71,6 +72,7 @@ type StockService interface {
 	SearchStocks(query string) ([]models.Stock, error)
 	GetStocksByBrokerage(brokerage string) ([]models.Stock, error)
 	GetStocksByDateRange(startDate, endDate time.Time) ([]models.Stock, error)
+	GetStocksByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) // Nueva función
 }
 
 // SyncResult define el resultado de un proceso de sincronización

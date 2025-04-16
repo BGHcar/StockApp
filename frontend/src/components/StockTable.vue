@@ -93,17 +93,18 @@ const sortedStocks = computed(() => {
 <style scoped>
 .table-container {
   width: 100%;
-  max-height: calc(100vh - 200px); /* Usamos max-height en lugar de height */
-  min-height: 150px; /* Establecemos una altura mínima */
-  overflow-y: auto;
+  height: 100%; /* Asegurar que ocupe toda la altura disponible */
+  position: relative; /* Mantener esto para el contexto de posicionamiento */
+  /* Quitar todos los estilos de scrollbar de aquí */
 }
 
 /* El resto del CSS se mantiene igual */
 .stock-table {
   width: 100%;
-  min-width: 800px; /* Asegura un ancho mínimo */
-  table-layout: fixed; /* Importante para controlar el ancho de columnas */
-  border-collapse: collapse;
+  min-width: 800px;
+  table-layout: fixed;
+  border-collapse: separate; /* Cambiado de collapse a separate para mejor control de bordes */
+  border-spacing: 0; /* Eliminar espacios entre celdas */
   background: linear-gradient(180deg, rgba(60, 16, 83, 0.95) 0%, rgba(60, 16, 83, 0.85) 100%);
 }
 
@@ -112,41 +113,53 @@ th, td {
   padding: 0.35rem 0.5rem;
   text-align: left;
   border: 1px solid rgba(173, 83, 137, 0.3);
-  white-space: nowrap; /* Evita que el texto se rompa */
+  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* Muestra ... si el texto es muy largo */
+  text-overflow: ellipsis;
 }
 
 /* Asegurar que todas las celdas de cabecera tengan bordes */
 th {
   position: sticky;
   top: 0;
-  background: rgba(60, 16, 83, 0.98);
+  background: rgb(40, 10, 60); /* Color sólido sin transparencia */
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 700;
   color: white;
   text-transform: uppercase;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(173, 83, 137, 0.3) !important; /* Forzar bordes con !important */
-  border-bottom: 2px solid rgba(173, 83, 137, 0.4) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(173, 83, 137, 0.3);
+  border-bottom: 2px solid rgba(173, 83, 137, 0.5); /* Borde inferior más visible */
   z-index: 10;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2); /* Añadir sombra para mejorar separación visual */
 }
 
 /* Específicamente para la columna Rating Act. y Precio Desde */
 th:nth-child(6), th:nth-child(7) {
-  border-right: 2px solid rgba(173, 83, 137, 0.4) !important; /* Línea más gruesa y visible */
+  border-right: 3px solid rgba(173, 83, 137, 0.6) !important; /* Línea más gruesa y visible */
 }
 
 .sortable {
   cursor: pointer;
   user-select: none;
+  position: relative; /* Para crear un nuevo contexto de apilamiento */
 }
 
-.sortable:hover {
-  background: rgba(173, 83, 137, 0.2);
+.sortable:hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgb(173, 83, 137); /* Color sólido sin transparencia */
+  z-index: -1; /* Coloca detrás del texto pero delante de cualquier contenido inferior */
+  pointer-events: none; /* Para que no interfiera con los eventos del mouse */
 }
 
 .sort-icon {
+  position: relative; /* Asegura que esté encima del fondo */
+  z-index: 1;
   margin-left: 4px;
   font-size: 0.7em;
 }
@@ -169,24 +182,5 @@ td {
 tr:hover td {
   background: rgba(173, 83, 137, 0.15);
   transition: background-color 0.3s ease;
-}
-
-/* Estilizar el scroll */
-.table-container::-webkit-scrollbar {
-  width: 10px;
-}
-
-.table-container::-webkit-scrollbar-track {
-  background: rgba(60, 16, 83, 0.8);
-  border-radius: 15px;
-}
-
-.table-container::-webkit-scrollbar-thumb {
-  background: rgba(173, 83, 137, 0.3);
-  border-radius: 15px;
-}
-
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(173, 83, 137, 0.5);
 }
 </style>

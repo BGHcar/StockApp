@@ -84,7 +84,7 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 
 	// Mostrar mensaje de inicio con timestamp
 	startTime := time.Now()
-	log.Printf("Iniciando sincronización de datos a las %s", 
+	log.Printf("Iniciando sincronización de datos a las %s",
 		startTime.Format("15:04:05"))
 
 	// Limpiar la tabla antes de sincronizar
@@ -110,14 +110,14 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 
 	log.Printf("Iniciando inserción paralela de %d registros...", len(stocks))
 	insertStartTime := time.Now()
-	
+
 	// Usar la nueva inserción paralela
 	inserted, failedInserts, err := s.repo.InsertStocksParallel(stocks)
-	
+
 	insertDuration := time.Since(insertStartTime)
-	log.Printf("Inserción completada en %.2f segundos", 
+	log.Printf("Inserción completada en %.2f segundos",
 		insertDuration.Seconds())
-	
+
 	if err != nil {
 		return result, fmt.Errorf("error inserting stocks: %w", err)
 	}
@@ -130,9 +130,9 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 
 	// Calcular tiempo total
 	totalDuration := time.Since(startTime)
-	log.Printf("Sincronización completada en %.2f segundos", 
+	log.Printf("Sincronización completada en %.2f segundos",
 		totalDuration.Seconds())
-	
+
 	// Guardar log de errores
 	s.logFailedInserts(failedInserts)
 
@@ -311,4 +311,9 @@ func (s *StockService) logSyncSummary(result interfaces.SyncResult) {
 // SearchStocks realiza una búsqueda general por ticker, compañía o brokerage
 func (s *StockService) SearchStocks(query string) ([]models.Stock, error) {
 	return s.repo.SearchStocks(query)
+}
+
+// GetStocksByPriceRange obtiene stocks por rango de precios objetivo
+func (s *StockService) GetStocksByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) {
+	return s.repo.GetByPriceRange(minPrice, maxPrice)
 }

@@ -2,26 +2,31 @@
 <template>
   <BaseTable>
     <div class="recommendations-container">
-      <h2 class="title">Recomendaciones de Inversión</h2>
-      <div v-if="loading" class="loading">
-        Analizando stocks...
-      </div>
-      <div v-else-if="error" class="error">
-        {{ error }}
-      </div>
-      <div v-else class="recommendations-list">
-        <div v-for="stock in topStocks" 
-             :key="stock.ticker" 
-             class="recommendation-item">
-          <div class="stock-info">
-            <h3>{{ stock.company }}</h3>
-            <span class="ticker">{{ stock.ticker }}</span>
+      <h2 class="section-title">Recomendaciones de Inversión</h2>
+      
+      <div class="recommendation-cards">
+        <div class="card top-pick" v-if="topPick">
+          <h3>Mejor Oportunidad</h3>
+          <div class="ticker">{{ topPick.ticker }}</div>
+          <div class="company">{{ topPick.company }}</div>
+          <div class="details">
+            <div class="rating">Rating: {{ topPick.rating_to || 'N/A' }}</div>
+            <div class="target">Precio Objetivo: {{ topPick.target_to }}</div>
+            <div class="score">Puntuación: {{ topPick.score.toFixed(2) }}</div>
           </div>
-          <div class="recommendation-details">
-            <p class="rating">Rating: {{ stock.rating_to }}</p>
-            <p class="action">{{ stock.action }}</p>
-            <p class="brokerage">Por: {{ stock.brokerage }}</p>
+          <div class="reason">{{ topPick.reason }}</div>
+        </div>
+        
+        <div class="card avoid" v-if="avoid">
+          <h3>Evitar</h3>
+          <div class="ticker">{{ avoid.ticker }}</div>
+          <div class="company">{{ avoid.company }}</div>
+          <div class="details">
+            <div class="rating">Rating: {{ avoid.rating_to || 'N/A' }}</div>
+            <div class="target">Precio Objetivo: {{ avoid.target_to }}</div>
+            <div class="score">Puntuación: {{ avoid.score.toFixed(2) }}</div>
           </div>
+          <div class="reason">{{ avoid.reason }}</div>
         </div>
       </div>
     </div>
@@ -29,89 +34,186 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import type { Stock } from '@/types/stock';
-import { getTopRecommendations } from '@/services/analysisService';
-import { useStockStore } from '@/stores/stockStore';
+import { computed } from 'vue'
+import type { Stock } from '@/types/stock'
+import BaseTable from './base/BaseTable.vue'
 
-const store = useStockStore();
-const topStocks = ref<Stock[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const props = defineProps<{
+  stocks: Stock[]
+}>()
 
-async function loadRecommendations() {
-  loading.value = true;
-  error.value = null;
-  try {
-    topStocks.value = getTopRecommendations(store.stocks);
-  } catch (e) {
-    error.value = 'Error al cargar recomendaciones';
-  } finally {
-    loading.value = false;
+// Sistema de puntuación para evaluar acciones
+function calculateScore(stock: Stock): { score: number, reason: string } {
+  let score = 0
+  let reason = ''
+  
+  // 1. Evaluación por Rating
+  const ratingScores: Record<string, number> = {
+    'Buy': 2,
+    'Overweight': 1.5,
+    'Equal Weight': 0,
+    'Hold': 0,
+    'Underweight': -1.5,
+    'Sell': -2
   }
+  
+  if (stock.rating_to && ratingScores[stock.rating_to]) {
+    score += ratingScores[stock.rating_to]
+    
+    if (ratingScores[stock.rating_to] > 0) {
+      reason += `Calificación positiva (${stock.rating_to}) de ${stock.brokerage}. `
+    } else if (ratingScores[stock.rating_to] < 0) {
+      reason += `Calificación negativa (${stock.rating_to}) de ${stock.brokerage}. `
+    }
+  }
+  
+  // 2. Evaluación por cambio en el precio objetivo
+  if (stock.target_from && stock.target_to) {
+    const targetFrom = parseFloat(stock.target_from.replace(/[^\d.-]/g, ''))
+    const targetTo = parseFloat(stock.target_to.replace(/[^\d.-]/g, ''))
+    
+    if (!isNaN(targetFrom) && !isNaN(targetTo)) {
+      const percentChange = ((targetTo - targetFrom) / targetFrom) * 100
+      
+      // Asignar puntos basados en el cambio porcentual
+      if (percentChange > 10) {
+        score += 2
+        reason += `Aumento significativo del precio objetivo (+${percentChange.toFixed(1)}%). `
+      } else if (percentChange > 0) {
+        score += 1
+        reason += `Ligero aumento del precio objetivo (+${percentChange.toFixed(1)}%). `
+      } else if (percentChange < -10) {
+        score -= 2
+        reason += `Reducción significativa del precio objetivo (${percentChange.toFixed(1)}%). `
+      } else if (percentChange < 0) {
+        score -= 1
+        reason += `Ligera reducción del precio objetivo (${percentChange.toFixed(1)}%). `
+      }
+    }
+  }
+  
+  // 3. Evaluación por acción realizada
+  if (stock.action) {
+    if (stock.action.includes('raised')) {
+      score += 1.5
+      reason += 'Aumento del precio objetivo. '
+    } else if (stock.action.includes('lowered')) {
+      score -= 1.5
+      reason += 'Reducción del precio objetivo. '
+    } else if (stock.action.includes('reiterated')) {
+      score += 0.5
+      reason += 'Reiteración del precio objetivo. '
+    }
+  }
+  
+  // 4. Factor de reputación de la correduría
+  const brokerageReputation: Record<string, number> = {
+    'Morgan Stanley': 0.5,
+    'JPMorgan Chase & Co.': 0.5,
+    'Goldman Sachs': 0.5,
+    'Wells Fargo & Company': 0.3,
+    'Needham & Company LLC': 0.3,
+    'Truist Financial': 0.2
+  }
+  
+  if (stock.brokerage && brokerageReputation[stock.brokerage]) {
+    score += brokerageReputation[stock.brokerage]
+    reason += `Análisis de una correduría de alta reputación (${stock.brokerage}). `
+  }
+  
+  // 5. Actualidad de la recomendación (priorizando las más recientes)
+  const today = new Date()
+  const stockDate = new Date(stock.time)
+  const daysDifference = Math.floor((today.getTime() - stockDate.getTime()) / (1000 * 3600 * 24))
+  
+  if (daysDifference <= 7) {
+    score += 0.5
+    reason += 'Recomendación reciente (última semana). '
+  }
+  
+  return { score, reason }
 }
 
-onMounted(() => {
-  loadRecommendations();
-});
+// Procesamiento de los stocks para añadir puntuaciones
+const scoredStocks = computed(() => {
+  return props.stocks.map(stock => {
+    const { score, reason } = calculateScore(stock)
+    return {
+      ...stock,
+      score,
+      reason
+    }
+  }).sort((a, b) => b.score - a.score) // Ordenar por puntuación descendente
+})
+
+// Mejores y peores recomendaciones
+const topPick = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[0] : null)
+const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[scoredStocks.value.length - 1] : null)
 </script>
 
 <style scoped>
 .recommendations-container {
-  padding: 1rem;
-}
-
-.title {
-  color: white;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.recommendations-list {
-  display: grid;
-  gap: 1rem;
-}
-
-.recommendation-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: rgba(60, 16, 83, 0.85);
-  border: 1px solid rgba(173, 83, 137, 0.3);
+  padding: 0.75rem;
+  background: rgba(40, 10, 60, 0.3);
   border-radius: 8px;
 }
 
-.stock-info {
-  flex: 1;
+.section-title {
+  font-size: 1.25rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.stock-info h3 {
-  color: white;
-  margin: 0;
-  font-size: 1.1rem;
+.recommendation-cards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  flex: 1;
+  min-width: 250px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Otros estilos más compactos... */
+.top-pick {
+  background: linear-gradient(135deg, rgba(77, 174, 128, 0.9), rgba(50, 120, 90, 0.9));
+  border: 1px solid rgb(77, 174, 128);
+}
+
+.avoid {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(180, 50, 50, 0.9));
+  border: 1px solid rgb(239, 68, 68);
 }
 
 .ticker {
-  color: rgba(173, 83, 137, 0.8);
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.company {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.details {
+  margin-bottom: 0.5rem;
+}
+
+.rating, .target, .score {
   font-size: 0.9rem;
+  color: #fff;
 }
 
-.recommendation-details {
-  text-align: right;
-}
-
-.rating {
-  color: #10B981;
-  font-weight: bold;
-}
-
-.action {
-  color: white;
-  font-size: 0.9rem;
-}
-
-.brokerage {
+.reason {
+  font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.7);
 }
 </style>
