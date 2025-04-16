@@ -30,6 +30,7 @@ func SetupRoutes(r chi.Router) {
 	r.Get("/api/stocks/{ticker}", controller.GetStockByTicker)
 	r.Get("/api/stocks/action/{action}", controller.GetStocksByAction)
 	r.Get("/api/stocks/rating/{rating}", controller.GetStocksByRating)
+	r.Get("/api/stocks/company/{company}", controller.GetStocksByCompany)
 	r.Get("/api/stats/actions", controller.GetActionStats)
 	r.Get("/api/stats/ratings", controller.GetRatingStats)
 	r.Get("/api/stats/count", controller.GetTotalCount)
@@ -152,6 +153,27 @@ func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Reque
 
 	respondJSON(w, stocks)
 }
+
+func (c *StockController) GetStocksByCompany(w http.ResponseWriter, r *http.Request) {	
+	company := chi.URLParam(r, "company")
+	if company == "" {
+		http.Error(w, "Company parameter is required", http.StatusBadRequest)
+		return
+	}
+	service, err := c.factory.CreateStockService()
+	if err != nil {
+		http.Error(w, "Error creating service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	stocks, err := service.GetStocksByCompany(company)
+	if err != nil {
+		http.Error(w, "Error fetching stocks: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, stocks)
+}
+
 
 func (c *StockController) GetStocksByBrokerage(w http.ResponseWriter, r *http.Request) {
 	brokerage := chi.URLParam(r, "brokerage")

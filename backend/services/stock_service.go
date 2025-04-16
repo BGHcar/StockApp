@@ -71,6 +71,10 @@ func (s *StockService) GetStocksByDateRange(startDate, endDate time.Time) ([]mod
 	return s.repo.GetByDateRange(startDate, endDate)
 }
 
+// GetStocksByCompany obtiene stocks filtrados por compañía
+func (s *StockService) GetStocksByCompany(company string) ([]models.Stock, error) {
+	return s.repo.GetByCompany(company)
+}
 
 // SyncStockData sincroniza datos de stocks desde la API
 func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {

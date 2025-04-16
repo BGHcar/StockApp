@@ -47,6 +47,7 @@ type StockRepository interface {
 	GetByRating(rating string) ([]models.Stock, error)
 	GetByBrokerage(brokerage string) ([]models.Stock, error)
 	GetByDateRange(startDate, endDate time.Time) ([]models.Stock, error)
+	GetByCompany(company string) ([]models.Stock, error)
 	GetActionCounts() (map[string]int, error)
 	GetRatingCounts() (map[string]int, error)
 	InsertStock(stock models.Stock) error
@@ -63,6 +64,7 @@ type StockService interface {
 	GetStockByTicker(ticker string) ([]models.Stock, error)
 	GetStocksByAction(action string) ([]models.Stock, error)
 	GetStocksByRating(rating string) ([]models.Stock, error)
+	GetStocksByCompany(company string) ([]models.Stock, error)
 	GetActionStats() (map[string]int, error)
 	GetRatingStats() (map[string]int, error)
 	SyncStockData() (SyncResult, error)

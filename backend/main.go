@@ -79,7 +79,8 @@ func main() {
 		log.Println("Recibida señal de apagado, cerrando servidor...")
 
 		// Crear contexto con timeout para shutdown
-		shutdownCtx, _ := context.WithTimeout(serverCtx, 30*time.Second)
+		shutdownCtx, shutdownCancel := context.WithTimeout(serverCtx, 30*time.Second)
+		defer shutdownCancel() // Ensure the context is canceled to prevent leaks
 
 		// Cerrar servidor
 		if err := server.Shutdown(shutdownCtx); err != nil {

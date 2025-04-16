@@ -201,6 +201,37 @@ func (r *StockRepository) GetActionCounts() (map[string]int, error) {
 	return counts, nil
 }
 
+func (r *StockRepository) GetByCompany(company string) ([]models.Stock, error) {
+	// Modificamos la consulta para usar ILIKE con comodines
+	rows, err := r.db.Query(`
+		SELECT ticker, company, target_from, target_to,
+			action, brokerage, rating_from, rating_to, time
+			FROM stocks
+			WHERE company ILIKE $1
+			ORDER BY time DESC
+	`, "%"+company+"%") // Agregamos comodines antes y después
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []models.Stock
+	for rows.Next() {
+		var stock models.Stock
+		if err := rows.Scan(
+			&stock.Ticker, &stock.Company,
+			&stock.TargetFrom, &stock.TargetTo,
+			&stock.Action, &stock.Brokerage,
+			&stock.RatingFrom, &stock.RatingTo, &stock.Time,
+		); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, stock)
+	}
+	return stocks, nil
+}
+
+
 // GetRatingCounts obtiene conteos por tipo de rating
 func (r *StockRepository) GetRatingCounts() (map[string]int, error) {
 	rows, err := r.db.Query(`
