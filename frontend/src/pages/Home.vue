@@ -1,6 +1,10 @@
 <template>
   <div class="container">
-    <h1 class="title">Lista de Stocks</h1>
+    <h1 class="title font-bold text-2xl text-white text-center mb-2">
+      <span class="text-[#ef4444]">STOCKS </span> 
+      <span class="text-[#60a5fa]">SEARCH </span>
+      <span class="text-[#4ade80]">APP</span>
+    </h1>
     
     <div class="content">
       <StockSearch @search="handleSearch" @reset="handleReset" class="component-container" />
@@ -34,12 +38,12 @@ const stockStore = useStockStore()
 const tableHeaders: TableHeader[] = [
   { key: 'ticker', label: 'Ticker', class: 'w-[8%]' },
   { key: 'company', label: 'Compañía', class: 'w-[15%]' },
+  { key: 'brokerage', label: 'Brokerage', class: 'w-[15%]' },
+  { key: 'action', label: 'Acción', class: 'w-[12%]' },
+  { key: 'rating_from', label: 'Rating Ant.', class: 'w-[10%]' }, // Había un label vacío aquí
+  { key: 'rating_to', label: 'Rating Act.', class: 'w-[10%]' },
   { key: 'target_from', label: 'Precio Desde', class: 'w-[10%]' },
   { key: 'target_to', label: 'Precio Hasta', class: 'w-[10%]' },
-  { key: 'action', label: 'Acción', class: 'w-[12%]' },
-  { key: 'brokerage', label: 'Brokerage', class: 'w-[15%]' },
-  { key: 'rating_from', label: 'Rating Ant.', class: 'w-[10%]' },
-  { key: 'rating_to', label: 'Rating Act.', class: 'w-[10%]' },
   { key: 'time', label: 'Fecha', class: 'w-[10%]' }
 ]
 
@@ -75,7 +79,8 @@ function handleReset() {
 }
 
 .title {
-  font-size: 2rem;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 2.5rem;
   font-weight: bold;
   color: white;
   text-align: center;

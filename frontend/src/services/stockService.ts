@@ -23,6 +23,9 @@ export async function searchStocks(type: string, query: string): Promise<Stock[]
     case 'brokerage':
       url = `${API_URL}/stocks/brokerage/${encodeURIComponent(query)}`
       break
+    case 'company':
+      url = `${API_URL}/stocks/company/${encodeURIComponent(query)}`
+      break
     case 'general':
     default:
       url = `${API_URL}/stocks/search/${encodeURIComponent(query)}`

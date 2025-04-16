@@ -31,9 +31,10 @@ import BaseTable from './base/BaseTable.vue'
 const searchOptions = [
   { value: 'general', label: 'General' },
   { value: 'ticker', label: 'Ticker' },
+  { value: 'company', label: 'Compañía' },
+  { value: 'brokerage', label: 'Brokerage' },
   { value: 'action', label: 'Acción' },
-  { value: 'rating', label: 'Rating' },
-  { value: 'brokerage', label: 'Brokerage' }
+  { value: 'rating', label: 'Rating' }
 ]
 
 const emit = defineEmits<{
