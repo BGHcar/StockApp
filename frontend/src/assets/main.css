@@ -1,0 +1,32 @@
+@import './base.css';
+
+/* Fuente y gradiente rosado-violeta */
+body {
+  font-family: 'Inter', sans-serif;
+  background: #ad5389;
+  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #3c1053, #ad5389);
+  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right, #3c1053, #ad5389);
+  /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+  color: #f3f4f6;
+  margin: 0;
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0; /* Eliminamos el padding */
+}
+
+
+
+/* Quitar los estilos globales de tabla que estaban interfiriendo */
+/* table {
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #444;
+} */
