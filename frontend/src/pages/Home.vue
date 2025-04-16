@@ -32,12 +32,15 @@ import type { TableHeader } from '@/types/table'
 const stockStore = useStockStore()
 
 const tableHeaders: TableHeader[] = [
-  { key: 'ticker', label: 'Ticker', class: 'w-[10%]' },
-  { key: 'company', label: 'Compañía', class: 'w-[25%]' },
-  { key: 'action', label: 'Acción', class: 'w-[15%]' },
-  { key: 'brokerage', label: 'Brokerage', class: 'w-[20%]' },
-  { key: 'rating_to', label: 'Rating', class: 'w-[15%]' },
-  { key: 'time', label: 'Fecha', class: 'w-[15%]' }
+  { key: 'ticker', label: 'Ticker', class: 'w-[8%]' },
+  { key: 'company', label: 'Compañía', class: 'w-[15%]' },
+  { key: 'target_from', label: 'Precio Desde', class: 'w-[10%]' },
+  { key: 'target_to', label: 'Precio Hasta', class: 'w-[10%]' },
+  { key: 'action', label: 'Acción', class: 'w-[12%]' },
+  { key: 'brokerage', label: 'Brokerage', class: 'w-[15%]' },
+  { key: 'rating_from', label: 'Rating Ant.', class: 'w-[10%]' },
+  { key: 'rating_to', label: 'Rating Act.', class: 'w-[10%]' },
+  { key: 'time', label: 'Fecha', class: 'w-[10%]' }
 ]
 
 onMounted(() => {

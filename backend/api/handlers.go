@@ -153,7 +153,7 @@ func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Reque
 	respondJSON(w, stocks)
 }
 
-func (c * StockController) GetStocksByBrokerage(w http.ResponseWriter, r *http.Request) {
+func (c *StockController) GetStocksByBrokerage(w http.ResponseWriter, r *http.Request) {
 	brokerage := chi.URLParam(r, "brokerage")
 	if brokerage == "" {
 		http.Error(w, "Brokerage parameter is required", http.StatusBadRequest)
@@ -172,7 +172,6 @@ func (c * StockController) GetStocksByBrokerage(w http.ResponseWriter, r *http.R
 
 	respondJSON(w, stocks)
 }
-
 
 func (c *StockController) GetActionStats(w http.ResponseWriter, r *http.Request) {
 	service, err := c.factory.CreateStockService()
@@ -222,7 +221,6 @@ func (c *StockController) GetTotalCount(w http.ResponseWriter, r *http.Request) 
 	respondJSON(w, map[string]int{"count": count})
 }
 
-
 // Helper function to respond with JSON
 func respondJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -234,22 +232,24 @@ func respondJSON(w http.ResponseWriter, data interface{}) {
 
 func (c *StockController) SearchStocks(w http.ResponseWriter, r *http.Request) {
 	query := chi.URLParam(r, "query")
+
+	// Si la consulta está vacía, devolver todos los stocks
 	if query == "" {
-		http.Error(w, "Query parameter is required", http.StatusBadRequest)
+		service, err := c.factory.CreateStockService()
+		if err != nil {
+			http.Error(w, "Error creating service: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		stocks, err := service.GetAllStocks()
+		if err != nil {
+			http.Error(w, "Error fetching stocks: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		respondJSON(w, stocks)
 		return
 	}
 
-	service, err := c.factory.CreateStockService()
-	if err != nil {
-		http.Error(w, "Error creating service: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	stocks, err := service.SearchStocks(query)
-	if err != nil {
-		http.Error(w, "Error searching stocks: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	respondJSON(w, stocks)
+	// Resto del código para búsquedas regulares...
 }

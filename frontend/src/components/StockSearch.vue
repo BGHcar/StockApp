@@ -3,25 +3,14 @@
   <BaseTable>
     <div class="search-container">
       <form @submit.prevent="onSearch" class="search-form">
-        <select 
-          v-model="type" 
-          class="search-select"
-        >
-          <option v-for="option in searchOptions" 
-                  :key="option.value" 
-                  :value="option.value">
+        <select v-model="type" class="search-select">
+          <option v-for="option in searchOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
         </select>
-        
-        <input
-          v-model="query"
-          type="text"
-          class="search-input"
-          :placeholder="placeholder"
-          required
-        />
-        
+
+        <input v-model="query" type="text" class="search-input" :placeholder="placeholder" />
+
         <div class="button-group">
           <button type="submit" class="btn btn-primary">
             Buscar
@@ -58,6 +47,11 @@ const query = ref('')
 const placeholder = computed(() => `Buscar por ${searchOptions.find(opt => opt.value === type.value)?.label.toLowerCase()}...`)
 
 function onSearch() {
+  // Si la consulta está vacía, emitir reset en lugar de search
+  if (query.value.trim() === '') {
+    onReset();
+    return;
+  }
   emit('search', type.value, query.value)
 }
 
@@ -70,12 +64,14 @@ function onReset() {
 
 <style scoped>
 .search-container {
-  padding: 0.5rem; /* Reducido de 1rem a 0.5rem */
+  padding: 0.5rem;
+  /* Reducido de 1rem a 0.5rem */
 }
 
 .search-form {
   display: flex;
-  gap: 0.5rem; /* Reducido de 1rem a 0.5rem */
+  gap: 0.5rem;
+  /* Reducido de 1rem a 0.5rem */
   align-items: center;
   justify-content: space-between;
 }
@@ -83,7 +79,8 @@ function onReset() {
 .search-select,
 .search-input,
 .btn {
-  padding: 0.35rem 0.75rem; /* Reducido de 0.5rem 1rem */
+  padding: 0.35rem 0.75rem;
+  /* Reducido de 0.5rem 1rem */
   border-radius: 0.5rem;
   border: 1px solid rgba(173, 83, 137, 0.3);
   background: rgba(60, 16, 83, 0.9);
@@ -97,7 +94,8 @@ function onReset() {
 
 .button-group {
   display: flex;
-  gap: 0.35rem; /* Reducido de 0.5rem a 0.35rem */
+  gap: 0.35rem;
+  /* Reducido de 0.5rem a 0.35rem */
 }
 
 .btn {

@@ -76,38 +76,37 @@ func (r *StockRepository) GetCount() (int, error) {
 	return count, nil
 }
 
-// GetByTicker obtiene un stock específico por su ticker
-func (r *StockRepository) GetByTicker(ticker string) (*models.Stock, error) {
-	// Implementación actual
+// GetByTicker obtiene stocks que coincidan con el ticker (búsqueda parcial)
+func (r *StockRepository) GetByTicker(ticker string) ([]models.Stock, error) {
+	// Modificamos la consulta para usar ILIKE con comodines
 	rows, err := r.db.Query(`
         SELECT ticker, company, target_from, target_to, 
                action, brokerage, rating_from, rating_to, time
         FROM stocks
         WHERE ticker ILIKE $1
         ORDER BY time DESC
-    `, ticker)
+    `, "%"+ticker+"%") // Agregamos comodines antes y después
 
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// Puede haber múltiples resultados si la clave primaria es compuesta
-	if !rows.Next() {
-		return nil, nil // No encontrado
+	var stocks []models.Stock
+	for rows.Next() {
+		var stock models.Stock
+		if err := rows.Scan(
+			&stock.Ticker, &stock.Company,
+			&stock.TargetFrom, &stock.TargetTo,
+			&stock.Action, &stock.Brokerage,
+			&stock.RatingFrom, &stock.RatingTo, &stock.Time,
+		); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, stock)
 	}
 
-	var stock models.Stock
-	if err := rows.Scan(
-		&stock.Ticker, &stock.Company,
-		&stock.TargetFrom, &stock.TargetTo,
-		&stock.Action, &stock.Brokerage,
-		&stock.RatingFrom, &stock.RatingTo, &stock.Time,
-	); err != nil {
-		return nil, err
-	}
-
-	return &stock, nil
+	return stocks, nil
 }
 
 // GetByAction obtiene stocks filtrados por tipo de acción

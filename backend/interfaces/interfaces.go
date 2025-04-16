@@ -42,7 +42,7 @@ type StockItem struct {
 type StockRepository interface {
 	GetAll() ([]models.Stock, error)
 	GetCount() (int, error)
-	GetByTicker(ticker string) (*models.Stock, error)
+	GetByTicker(ticker string) ([]models.Stock, error) // Ya devuelve un slice
 	GetByAction(action string) ([]models.Stock, error)
 	GetByRating(rating string) ([]models.Stock, error)
 	GetByBrokerage(brokerage string) ([]models.Stock, error)
@@ -60,7 +60,7 @@ type StockRepository interface {
 type StockService interface {
 	GetAllStocks() ([]models.Stock, error)
 	GetTotalCount() (int, error)
-	GetStockByTicker(ticker string) (*models.Stock, error)
+	GetStockByTicker(ticker string) ([]models.Stock, error)
 	GetStocksByAction(action string) ([]models.Stock, error)
 	GetStocksByRating(rating string) ([]models.Stock, error)
 	GetActionStats() (map[string]int, error)

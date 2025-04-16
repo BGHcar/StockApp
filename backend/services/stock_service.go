@@ -38,7 +38,7 @@ func (s *StockService) GetTotalCount() (int, error) {
 }
 
 // GetStockByTicker obtiene un stock específico por su ticker
-func (s *StockService) GetStockByTicker(ticker string) (*models.Stock, error) {
+func (s *StockService) GetStockByTicker(ticker string) ([]models.Stock, error) {
 	return s.repo.GetByTicker(ticker)
 }
 
