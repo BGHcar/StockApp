@@ -260,12 +260,12 @@ func (r *StockRepository) GetRatingCounts() (map[string]int, error) {
 func (r *StockRepository) GetByBrokerage(brokerage string) ([]models.Stock, error) {
 	// Modificamos la consulta para usar ILIKE con comodines
 	rows, err := r.db.Query(`
-		SELECT ticker, company, target_from, target_to,
-			action, brokerage, rating_from, rating_to, time
-			FROM stocks 
-			WHERE brokerage ILIKE $1
-			ORDER BY time DESC
-	`, "%"+brokerage+"%") // Agregamos comodines antes y después
+        SELECT ticker, company, target_from, target_to,
+            action, brokerage, rating_from, rating_to, time
+            FROM stocks 
+            WHERE brokerage ILIKE $1
+            ORDER BY time DESC
+    `, "%"+brokerage+"%") // Agregamos comodines antes y después
 
 	if err != nil {
 		return nil, err
@@ -285,6 +285,15 @@ func (r *StockRepository) GetByBrokerage(brokerage string) ([]models.Stock, erro
 		}
 		stocks = append(stocks, stock)
 	}
+
+	// Añadir esta verificación de errores al final
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Añadir este log para depuración
+	log.Printf("Búsqueda por brokerage '%s': %d resultados encontrados", brokerage, len(stocks))
+
 	return stocks, nil
 }
 

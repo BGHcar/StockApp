@@ -17,10 +17,14 @@
       </div>
       <div v-else class="components-wrapper">
         <StockTable 
+          v-if="stockStore.stocks.length > 0"
           :stocks="stockStore.stocks" 
           :headers="tableHeaders" 
           class="table-container" 
         />
+        <div v-else class="no-results">
+          No se encontraron resultados
+        </div>
         <StockRecommendations 
           v-if="stockStore.stocks.length > 0" 
           :stocks="stockStore.stocks" 
