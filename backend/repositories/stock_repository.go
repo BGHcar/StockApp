@@ -533,8 +533,7 @@ func (r *StockRepository) SearchStocks(query string) ([]models.Stock, error) {
 
 // GetByPriceRange obtiene stocks dentro de un rango de precios objetivo
 func (r *StockRepository) GetByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) {
-	// Preparar valores para la búsqueda en SQL
-	// Eliminar el símbolo $ de los valores si existe
+	// Limpiar los valores de precio
 	minPriceClean := minPrice
 	maxPriceClean := maxPrice
 
@@ -546,14 +545,21 @@ func (r *StockRepository) GetByPriceRange(minPrice, maxPrice string) ([]models.S
 		maxPriceClean = maxPrice[1:]
 	}
 
-	// Crear expresión para extraer el valor numérico del campo target_to
+	// Usar una consulta SQL directa con extracción numérica
 	query := `
         SELECT ticker, company, target_from, target_to, 
-            action, brokerage, rating_from, rating_to, time
+               action, brokerage, rating_from, rating_to, time
         FROM stocks
         WHERE 
-            regexp_replace(target_to, '[^0-9.]', '', 'g')::float 
-            BETWEEN $1::float AND $2::float
+            (
+                CAST(REGEXP_REPLACE(target_from, '[^0-9.]', '', 'g') AS DECIMAL(10,2)) 
+                BETWEEN $1::DECIMAL(10,2) AND $2::DECIMAL(10,2)
+            )
+            AND
+            (
+                CAST(REGEXP_REPLACE(target_to, '[^0-9.]', '', 'g') AS DECIMAL(10,2)) 
+                BETWEEN $1::DECIMAL(10,2) AND $2::DECIMAL(10,2)
+            )
         ORDER BY time DESC
     `
 
@@ -575,6 +581,10 @@ func (r *StockRepository) GetByPriceRange(minPrice, maxPrice string) ([]models.S
 			return nil, err
 		}
 		stocks = append(stocks, stock)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stocks, nil
