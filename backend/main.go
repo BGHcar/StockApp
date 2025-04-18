@@ -4,9 +4,9 @@
 package main
 
 import (
-	"backend/api"
 	"backend/config"
 	"backend/db"
+	"backend/routes"
 	"context"
 	"log"
 	"net/http"
@@ -51,12 +51,17 @@ func main() {
 
 	// Initialize the database connection
 	db.InitDB()
-	// Coloca el defer aquí, justo después de inicializar la BD
-	defer db.DB.Close()
-	log.Println("Database connection will be closed when the application exits")
+
+	// Configurar cierre de la conexión
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			log.Printf("Error al cerrar la conexión DB: %v", err)
+		}
+		log.Println("Database connection closed")
+	}()
 
 	// Set up routes for the API
-	api.SetupRoutes(router)
+	routes.SetupRoutes(router)
 
 	// Crear servidor con timeouts
 	server := &http.Server{

@@ -5,51 +5,107 @@ package db
 
 import (
 	"backend/interfaces"
-	"database/sql"
+	"backend/models"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
-	_ "github.com/lib/pq" // PostgreSQL driver
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // DB es la conexión global a la base de datos
-var DB *sql.DB
+var DB *gorm.DB
 
-// DBAdapter adapta sql.DB a la interfaz DatabaseHandler
+// DBAdapter adapta gorm.DB a la interfaz DatabaseHandler
 type DBAdapter struct {
-	DB *sql.DB
+	db *gorm.DB
 }
 
 // Verificamos que DBAdapter implementa interfaces.DatabaseHandler
 var _ interfaces.DatabaseHandler = (*DBAdapter)(nil)
 
-// Close cierra la conexión a la base de datos
-func (d *DBAdapter) Close() error {
-	return d.DB.Close()
-}
-
-// Exec ejecuta una consulta que no devuelve filas
-func (d *DBAdapter) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return d.DB.Exec(query, args...)
-}
-
-// Query ejecuta una consulta que devuelve filas
-func (d *DBAdapter) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	return d.DB.Query(query, args...)
-}
-
-// QueryRow ejecuta una consulta que devuelve una sola fila
-func (d *DBAdapter) QueryRow(query string, args ...interface{}) *sql.Row {
-	return d.DB.QueryRow(query, args...)
+// DB devuelve el objeto *gorm.DB subyacente
+func (d *DBAdapter) DB() *gorm.DB {
+	return d.db
 }
 
 // NewDatabaseHandler crea un nuevo handler de base de datos
 func NewDatabaseHandler() (*DBAdapter, error) {
-	return &DBAdapter{DB: DB}, nil
+	return &DBAdapter{db: DB}, nil
+}
+
+// InitDB inicializa la conexión a la base de datos con GORM
+func InitDB() {
+	var err error
+
+	// Obtenemos la configuración de conexión
+	connStr := getDatabaseConfig()
+	if connStr == "" {
+		log.Fatal("No se pudo obtener una cadena de conexión válida. Verifique las variables de entorno.")
+	}
+
+	// Configurar el logger de GORM
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold: time.Second,
+			LogLevel:      logger.Info,
+			Colorful:      true,
+		},
+	)
+
+	// Abrimos la conexión con GORM
+	DB, err = gorm.Open(postgres.Open(connStr), &gorm.Config{
+		Logger: newLogger,
+		NowFunc: func() time.Time {
+			return time.Now().UTC() // Usar UTC para timestamps
+		},
+	})
+
+	if err != nil {
+		log.Fatal("Error al conectar con la base de datos:", err)
+	}
+
+	log.Println("Conexión a base de datos establecida correctamente")
+
+	// Configuración del pool de conexiones
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Fatal("Error al obtener conexión SQL subyacente:", err)
+	}
+
+	// Configuración del pool desde variables de entorno
+	maxOpenConns := getEnvAsInt("DB_MAX_OPEN_CONNS", 10)
+	maxIdleConns := getEnvAsInt("DB_MAX_IDLE_CONNS", 5)
+	connMaxLifetimeMin := getEnvAsInt("DB_CONN_MAX_LIFETIME_MIN", 5)
+	connMaxIdleTimeMin := getEnvAsInt("DB_CONN_MAX_IDLE_TIME_MIN", 3)
+
+	// Aplicar configuración
+	sqlDB.SetMaxOpenConns(maxOpenConns)
+	sqlDB.SetMaxIdleConns(maxIdleConns)
+	sqlDB.SetConnMaxLifetime(time.Duration(connMaxLifetimeMin) * time.Minute)
+	sqlDB.SetConnMaxIdleTime(time.Duration(connMaxIdleTimeMin) * time.Minute)
+
+	// Auto-migración para crear/actualizar la estructura de la tabla
+	err = DB.AutoMigrate(&models.Stock{})
+	if err != nil {
+		log.Fatal("Error durante la migración automática:", err)
+	}
+
+	log.Println("Estructura de datos verificada correctamente mediante migración")
+}
+
+// CloseDB cierra la conexión a la base de datos
+func CloseDB() error {
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
 }
 
 // getDatabaseConfig obtiene la configuración de la base de datos desde variables de entorno
@@ -96,95 +152,6 @@ func getDatabaseConfig() string {
 	// Construir URL de conexión
 	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
 		user, password, host, port, dbName, sslMode)
-}
-
-// InitDB inicializa la conexión a la base de datos
-func InitDB() {
-	var err error
-
-	// Obtenemos la configuración de conexión
-	connStr := getDatabaseConfig()
-	if connStr == "" {
-		log.Fatal("No se pudo obtener una cadena de conexión válida. Verifique las variables de entorno.")
-	}
-
-	// No mostramos ninguna información sobre la cadena de conexión
-	log.Println("Iniciando conexión a base de datos...")
-
-	// Abrimos la conexión
-	DB, err = sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal("Error al conectar con la base de datos. Verifique las credenciales y la conectividad.")
-	}
-
-	// Configuración del pool desde variables de entorno
-	maxOpenConns := getEnvAsInt("DB_MAX_OPEN_CONNS", 10)
-	maxIdleConns := getEnvAsInt("DB_MAX_IDLE_CONNS", 5)
-	connMaxLifetimeMin := getEnvAsInt("DB_CONN_MAX_LIFETIME_MIN", 5)
-	connMaxIdleTimeMin := getEnvAsInt("DB_CONN_MAX_IDLE_TIME_MIN", 3)
-
-	// Aplicar configuración
-	DB.SetMaxOpenConns(maxOpenConns)
-	DB.SetMaxIdleConns(maxIdleConns)
-	DB.SetConnMaxLifetime(time.Duration(connMaxLifetimeMin) * time.Minute)
-	DB.SetConnMaxIdleTime(time.Duration(connMaxIdleTimeMin) * time.Minute)
-
-	// Verificamos la conexión
-	if err = DB.Ping(); err != nil {
-		log.Fatal("No se pudo establecer comunicación con la base de datos.")
-	}
-
-	log.Println("Conexión a base de datos establecida correctamente")
-
-	// Crear la tabla si no existe, usando una consulta parametrizada desde un archivo o variable de entorno
-	createTableSQL := os.Getenv("DB_CREATE_TABLE_SQL")
-	if createTableSQL == "" {
-		// Si no se proporciona, usar una consulta básica
-		createTableSQL = `
-        CREATE TABLE IF NOT EXISTS stocks (
-            ticker TEXT NOT NULL,
-            company TEXT,
-            target_from TEXT,
-            target_to TEXT,
-            action TEXT,
-            brokerage TEXT,
-            rating_from TEXT,
-            rating_to TEXT,
-            time TIMESTAMP NOT NULL,
-            PRIMARY KEY (ticker, time)
-        )`
-	}
-
-	if _, err = DB.Exec(createTableSQL); err != nil {
-		log.Printf("Error al preparar estructura de datos: %v", err)
-	} else {
-		log.Println("Estructura de datos verificada correctamente")
-	}
-}
-
-// CloseDB cierra la conexión a la base de datos
-func CloseDB() {
-	if err := DB.Close(); err != nil {
-		log.Fatalf("Error closing database: %v", err)
-	}
-	log.Println("Database connection closed")
-}
-
-// sanitizeConnectionString oculta completamente la información sensible
-func sanitizeConnectionString(connStr string) string {
-	if connStr == "" {
-		return "[cadena de conexión vacía]"
-	}
-
-	// Detectar el tipo de conexión sin mostrar detalles
-	if strings.Contains(connStr, "cockroachlabs.cloud") {
-		return "[conexión segura a CockroachDB Cloud]"
-	} else if strings.Contains(connStr, "localhost") || strings.Contains(connStr, "127.0.0.1") {
-		return "[conexión local a CockroachDB]"
-	}
-
-	// Para cualquier otro caso
-	return "[conexión de base de datos configurada]"
 }
 
 // Helper para obtener variables de entorno como enteros

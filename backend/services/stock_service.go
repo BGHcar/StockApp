@@ -34,7 +34,8 @@ func (s *StockService) GetAllStocks() ([]models.Stock, error) {
 
 // GetTotalCount obtiene el número total de stocks
 func (s *StockService) GetTotalCount() (int, error) {
-	return s.repo.GetCount()
+	count, err := s.repo.GetCount()
+	return int(count), err // Convertir de int64 a int
 }
 
 // GetStockByTicker obtiene un stock específico por su ticker

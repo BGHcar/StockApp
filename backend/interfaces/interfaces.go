@@ -2,16 +2,14 @@ package interfaces
 
 import (
 	"backend/models"
-	"database/sql"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-// DatabaseHandler define la interfaz para operaciones de base de datos
+// DatabaseHandler define la interfaz para operaciones de base de datos con GORM
 type DatabaseHandler interface {
-	Close() error
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
+	DB() *gorm.DB
 }
 
 // APIClient define la interfaz para consumir APIs externas
@@ -41,7 +39,7 @@ type StockItem struct {
 // Repository define la interfaz para el acceso a datos
 type StockRepository interface {
 	GetAll() ([]models.Stock, error)
-	GetCount() (int, error)
+	GetCount() (int64, error)
 	GetByTicker(ticker string) ([]models.Stock, error) // Ya devuelve un slice
 	GetByAction(action string) ([]models.Stock, error)
 	GetByRating(rating string) ([]models.Stock, error)

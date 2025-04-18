@@ -1,4 +1,4 @@
-package api
+package routes
 
 import (
 	"backend/factory"
