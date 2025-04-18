@@ -19,6 +19,23 @@
   --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
   --vt-c-text-dark-1: var(--vt-c-white);
   --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+
+  /* Colores base para fondos */
+  --bg-gradient-start: #EAEAEA;
+  --bg-gradient-middle1: #DBDBDB;
+  --bg-gradient-middle2: #F2F2F2;
+  --bg-gradient-end: #ADA996;
+  
+  /* Colores para elementos UI */
+  --header-bg: #646464;
+  --header-darker: #4a4a4a;
+  --text-on-light: #333;
+  --text-on-dark: #fff;
+  
+  /* Colores para bordes y sombras */
+  --border-color: rgba(173, 169, 150, 0.3);
+  --shadow-color: rgba(100, 100, 100, 0.2);
+  --shadow-color-darker: rgba(100, 100, 100, 0.4);
 }
 
 /* semantic color variables for this project */

@@ -153,67 +153,116 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
 
 <style scoped>
 .recommendations-container {
-  padding: 0.75rem;
-  background: rgba(40, 10, 60, 0.3);
+  padding: 0;
+  background: rgba(255, 255, 255, 0.7);
   border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(173, 169, 150, 0.3);
+  border: 2px solid #646464; /* Borde más oscuro y consistente */
+  /* Eliminar desbordamiento para evitar problemas con esquinas redondeadas */
+  overflow: hidden;
 }
 
 .section-title {
-  font-size: 1.25rem;
-  color: #fff;
-  margin-bottom: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  /* Eliminar border-radius para evitar inconsistencias con el contenedor padre */
+  border-radius: 0;
+  font-size: 1.4rem;
+  color: white;
+  /* Eliminar margin-bottom para evitar espacios innecesarios */
+  margin: 0;
   text-align: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #646464;
+  /* Añadir borde inferior para separar visualmente del contenido */
+  border-bottom: 2px solid #646464;
 }
 
 .recommendation-cards {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  /* Ajustar padding para eliminar espacio al fondo */
+  padding: 0.5rem 0.5rem 0; /* Quitar padding inferior */
+  align-items: stretch;
+  /* Evitar desbordamiento */
+  overflow: hidden;
 }
 
+/* Ajustar márgenes de las tarjetas para alinear correctamente */
 .card {
   flex: 1;
-  min-width: 250px;
-  padding: 0.75rem;
+  margin: 0 0.25rem 0.5rem; /* Añadir margen inferior para compensar */
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 0.75rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
 }
 
-/* Otros estilos más compactos... */
+/* Ajustar la primera tarjeta para eliminar margen izquierdo */
+.card:first-child {
+  margin-left: 0;
+}
+
+/* Ajustar la última tarjeta para eliminar margen derecho */
+.card:last-child {
+  margin-right: 0;
+}
+
+/* El resto del código permanece igual */
 .top-pick {
-  background: linear-gradient(135deg, rgba(77, 174, 128, 0.9), rgba(50, 120, 90, 0.9));
-  border: 1px solid rgb(77, 174, 128);
+  background: rgba(77, 174, 128, 0.7); /* Verde más intenso */
+  border: 2px solid #4DAE80; /* Borde verde más visible */
 }
 
 .avoid {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(180, 50, 50, 0.9));
-  border: 1px solid rgb(239, 68, 68);
+  background: rgba(239, 68, 68, 0.7); /* Rojo más intenso */
+  border: 2px solid #EF4444; /* Borde rojo más visible */
 }
 
+/* El resto del código se mantiene igual */
 .ticker {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-align: left; /* Texto alineado a la izquierda */
+  letter-spacing: 0.05em;
 }
 
 .company {
-  font-size: 1.1rem;
-  color: #fff;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
   margin-bottom: 0.5rem;
+  text-align: left; /* Texto alineado a la izquierda */
+  font-style: italic;
 }
 
 .details {
   margin-bottom: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  text-align: left; /* Asegurar que todo está alineado a la izquierda */
 }
 
 .rating, .target, .score {
   font-size: 0.9rem;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 0.2rem;
+  font-weight: 500;
+  text-align: left; /* Texto alineado a la izquierda */
 }
 
 .reason {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  margin-top: auto;
+  text-align: left; /* Texto alineado a la izquierda */
 }
 </style>

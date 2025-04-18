@@ -3,7 +3,7 @@
     <h1 class="title font-bold text-2xl text-white text-center mb-2">
       <span class="text-[#ef4444]">STOCKS </span> 
       <span class="text-[#60a5fa]">SEARCH </span>
-      <span class="text-[#4ade80]">APP</span>
+      <span class="text-white">APP</span> <!-- Cambiado de verde a blanco -->
     </h1>
     
     <div class="content">
@@ -85,18 +85,23 @@ function handleReset() {
 .container {
   width: 100%;
   max-width: 95vw;
-  margin: 0 auto; /* Cambiado de '0 0' a '0 auto' para centrar horizontalmente */
+  margin: 0 auto;
   padding: 0.5rem;
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Cambiar de fondo sólido a transparente para mostrar el gradiente del body */
+  background: transparent;
+  /* Opcional: añadir un efecto sutil para mejorar la legibilidad */
+  backdrop-filter: blur(3px);
 }
 
 .title {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1.75rem; /* Reducido aún más */
   font-weight: 900; /* Aumentar a 900 para una negrita más fuerte */
+  /* Cambiar color a blanco por defecto */
   color: white;
   text-align: center;
   margin: 0 0 0.25rem 0; /* Eliminar margen superior */
@@ -104,7 +109,8 @@ function handleReset() {
   letter-spacing: 0.05em; /* Añadir espaciado entre letras */
   width: 100%; /* Asegurar que ocupe todo el ancho disponible */
   text-transform: uppercase; /* Opcional: texto en mayúsculas */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); /* Sombra sutil para mejor legibilidad */
+  /* Actualizar sombra para que complemente el nuevo tema */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 /* Específicamente para los spans dentro del título */
@@ -125,7 +131,8 @@ function handleReset() {
 .search-container {
   width: 100%;
   border-radius: 8px;
-  background: rgba(60, 16, 83, 0.95);
+  /* Cambiar del fondo morado al transparente */
+  background: transparent;
   margin-bottom: 0.25rem;
   flex: 0 0 auto; /* No crecer */
 }
@@ -133,7 +140,7 @@ function handleReset() {
 .components-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem; /* Aumentar ligeramente el espacio entre componentes */
   flex: 1;
   overflow: hidden;
   min-height: 0;
@@ -144,7 +151,8 @@ function handleReset() {
 .table-container {
   width: 100%;
   border-radius: 8px;
-  background: rgba(60, 16, 83, 0.95);
+  /* Cambiar del fondo morado al transparente */
+  background: transparent;
   flex: 1 1 auto; /* Cambiar a flex-grow: 1 para que ocupe el espacio restante */
   min-height: 0; /* Permitir que se encoja si es necesario */
   overflow: auto; /* Esta tendrá scroll */
@@ -153,21 +161,38 @@ function handleReset() {
 .recommendations-container {
   width: 100%;
   border-radius: 8px;
-  background: rgba(60, 16, 83, 0.95);
+  /* Cambiar del fondo morado al transparente */
+  background: transparent;
   flex: 0 0 auto; /* No crecer ni encoger, ajustarse al contenido */
   max-height: none; /* Quitar la restricción de altura máxima */
   overflow: visible; /* Sin scroll */
-  padding-bottom: 0.25rem;
+  padding-bottom: 0; /* Eliminar el padding-bottom adicional */
 }
 
 .status-message {
   text-align: center;
   padding: 0.5rem;
-  color: white;
-  flex: 0 0 auto; /* No crecer */
+  color: #333;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 2px solid #646464; /* Borde más oscuro y consistente */
 }
 
 .error {
-  color: #ef4444;
+  color: #d32f2f;
+  border: 2px solid #d32f2f; /* Borde rojo para errores */
+}
+
+/* Estilo para mensaje de no resultados */
+.no-results {
+  text-align: center;
+  padding: 1rem;
+  color: #333;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 2px solid #646464; /* Borde más oscuro y consistente */
 }
 </style>

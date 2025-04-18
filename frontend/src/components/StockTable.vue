@@ -93,9 +93,12 @@ const sortedStocks = computed(() => {
 <style scoped>
 .table-container {
   width: 100%;
-  height: 100%; /* Asegurar que ocupe toda la altura disponible */
-  position: relative; /* Mantener esto para el contexto de posicionamiento */
-  /* Quitar todos los estilos de scrollbar de aquí */
+  height: 100%;
+  position: relative;
+  background: #D1CEC8;
+  box-shadow: 0 3px 5px rgba(173, 169, 150, 0.2);
+  border: 2px solid #646464; /* Borde más oscuro y consistente */
+  border-radius: 8px;
 }
 
 /* El resto del CSS se mantiene igual */
@@ -105,14 +108,14 @@ const sortedStocks = computed(() => {
   table-layout: fixed;
   border-collapse: separate; /* Cambiado de collapse a separate para mejor control de bordes */
   border-spacing: 0; /* Eliminar espacios entre celdas */
-  background: linear-gradient(180deg, rgba(60, 16, 83, 0.95) 0%, rgba(60, 16, 83, 0.85) 100%);
+  background: transparent; /* Cambiado para que use el gradiente del contenedor */
 }
 
 /* Definimos anchos específicos para cada columna */
 th, td {
   padding: 0.35rem 0.5rem;
   text-align: left;
-  border: 1px solid rgba(173, 83, 137, 0.3);
+  border: 1px solid rgba(173, 169, 150, 0.3); /* Color de borde que complementa el gradiente */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -122,21 +125,21 @@ th, td {
 th {
   position: sticky;
   top: 0;
-  background: rgb(40, 10, 60); /* Color sólido sin transparencia */
+  background: #646464; /* Color sólido más oscuro que armoniza con el gradiente */
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 700;
   color: white;
   text-transform: uppercase;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(173, 83, 137, 0.3);
-  border-bottom: 2px solid rgba(173, 83, 137, 0.5); /* Borde inferior más visible */
+  border: 1px solid #4a4a4a;
+  border-bottom: 2px solid #4a4a4a; /* Borde inferior más visible */
   z-index: 10;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2); /* Añadir sombra para mejorar separación visual */
+  box-shadow: 0 2px 4px rgba(173, 169, 150, 0.4); /* Sombra acorde al fondo */
 }
 
 /* Específicamente para la columna Rating Act. y Precio Desde */
 th:nth-child(6), th:nth-child(7) {
-  border-right: 3px solid rgba(173, 83, 137, 0.6) !important; /* Línea más gruesa y visible */
+  border-right: 2px solid #4a4a4a !important; /* Línea más gruesa y visible */
 }
 
 .sortable {
@@ -152,7 +155,7 @@ th:nth-child(6), th:nth-child(7) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgb(173, 83, 137); /* Color sólido sin transparencia */
+  background: #8a8a8a; /* Un tono más claro cuando se hace hover */
   z-index: -1; /* Coloca detrás del texto pero delante de cualquier contenido inferior */
   pointer-events: none; /* Para que no interfiera con los eventos del mouse */
 }
@@ -175,12 +178,15 @@ th:nth-child(8), td:nth-child(8) { width: 10%; } /* Precio Hasta */
 th:nth-child(9), td:nth-child(9) { width: 10%; } /* Fecha */
 
 td {
-  background: rgba(60, 16, 83, 0.85);
-  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.7); /* Fondo claro semi-transparente */
+  color: #333; /* Texto oscuro para contraste */
+  border: 1px solid rgba(173, 169, 150, 0.3); /* Borde más acorde al tema */
 }
 
 tr:hover td {
-  background: rgba(173, 83, 137, 0.15);
+  background: rgba(173, 169, 150, 0.2); /* Hover sutil acorde al fondo */
+  color: #000; /* Texto más oscuro en hover */
   transition: background-color 0.3s ease;
+  box-shadow: inset 0 0 5px rgba(173, 169, 150, 0.2); /* Sombra interna sutil */
 }
 </style>

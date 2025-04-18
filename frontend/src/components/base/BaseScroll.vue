@@ -14,16 +14,19 @@
 }
 
 .base-scroll::-webkit-scrollbar-track {
-  background: rgba(60, 16, 83, 0.8);
+  /* Cambiado del color morado al gris que complementa el gradiente */
+  background: rgba(100, 100, 100, 0.2);
   border-radius: 15px;
 }
 
 .base-scroll::-webkit-scrollbar-thumb {
-  background: rgba(173, 83, 137, 0.3);
+  /* Cambiado del color rosa al gris más oscuro */
+  background: rgba(100, 100, 100, 0.5);
   border-radius: 15px;
 }
 
 .base-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(173, 83, 137, 0.5);
+  /* Color de hover más oscuro */
+  background: rgba(100, 100, 100, 0.8);
 }
 </style>

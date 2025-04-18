@@ -118,7 +118,11 @@ function onReset() {
 
 <style scoped>
 .search-container {
-  padding: 0.5rem;
+  padding: 0;
+  background: #D1CEC8;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(173, 169, 150, 0.25);
+  border: 2px solid #646464; /* Borde más oscuro y consistente */
 }
 
 .search-form {
@@ -126,6 +130,7 @@ function onReset() {
   gap: 0.5rem;
   align-items: center;
   justify-content: space-between;
+  padding: 0.75rem; /* Mover el padding aquí */
 }
 
 .search-select,
@@ -133,14 +138,20 @@ function onReset() {
 .btn {
   padding: 0.35rem 0.75rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(173, 83, 137, 0.3);
-  background: rgba(60, 16, 83, 0.9);
-  color: white;
+  border: 1px solid rgba(173, 169, 150, 0.5);
+  background: #646464;
+  color: white; /* Asegurar que el texto sea blanco en todos estos elementos */
+  box-shadow: 0 1px 3px rgba(173, 169, 150, 0.3);
 }
 
 .search-input {
   flex: 1;
   min-width: 200px;
+  color: white; /* Asegurar que el color del texto sea blanco */
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7); /* Placeholder más claro pero aún visible */
 }
 
 /* Estilos para el contenedor de rango de precios */
@@ -156,13 +167,18 @@ function onReset() {
   min-width: 80px;
   padding: 0.35rem 0.75rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(173, 83, 137, 0.3);
-  background: rgba(60, 16, 83, 0.9);
-  color: white;
+  border: 1px solid rgba(173, 169, 150, 0.5); /* Borde acorde al tema */
+  background: #646464;
+  color: white; /* Añadir color blanco explícitamente */
+  box-shadow: 0 1px 3px rgba(173, 169, 150, 0.3); /* Sombra acorde al fondo */
+}
+
+.price-input::placeholder {
+  color: rgba(255, 255, 255, 0.7); /* Placeholder más claro pero aún visible */
 }
 
 .price-separator {
-  color: white;
+  color: #333; /* Color que contrasta con el fondo del gradiente */
   font-weight: bold;
 }
 
@@ -174,23 +190,19 @@ function onReset() {
 .btn {
   cursor: pointer;
   transition: all 0.3s ease;
+  font-weight: bold;
 }
 
-.btn-primary {
-  background: rgba(173, 83, 137, 0.8);
-}
-
-.btn-primary:hover {
-  background: rgba(173, 83, 137, 1);
-}
-
+/* Unificar el color de ambos botones */
+.btn-primary,
 .btn-secondary {
-  background: transparent;
-  border: 1px solid rgba(173, 83, 137, 0.3);
+  background: #4a4a4a; /* Mismo color para ambos botones */
 }
 
+/* Mantener el mismo comportamiento de hover para ambos */
+.btn-primary:hover,
 .btn-secondary:hover {
-  background: rgba(173, 83, 137, 0.2);
+  background: #333; /* Mismo color de hover */
 }
 
 /* Remover las flechas de los inputs numéricos */
@@ -202,5 +214,15 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Añadir un estilo de foco para mejorar la accesibilidad */
+.search-select:focus,
+.search-input:focus,
+.price-input:focus,
+.btn:focus {
+  outline: none;
+  border-color: #646464;
+  box-shadow: 0 0 0 2px rgba(173, 169, 150, 0.3); /* Sombra de foco acorde al tema */
 }
 </style>
