@@ -185,7 +185,7 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
   justify-content: space-between;
   /* Ajustar padding para eliminar espacio al fondo */
   padding: 0.5rem 0.5rem 0; /* Quitar padding inferior */
-  align-items: stretch;
+  align-items: center;
   /* Evitar desbordamiento */
   overflow: hidden;
 }
@@ -193,6 +193,7 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
 /* Ajustar márgenes de las tarjetas para alinear correctamente */
 .card {
   flex: 1;
+
   margin: 0 0.25rem 0.5rem; /* Añadir margen inferior para compensar */
   border-radius: 8px;
   padding: 0.75rem;
@@ -213,13 +214,13 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
 
 /* El resto del código permanece igual */
 .top-pick {
-  background: rgba(77, 174, 128, 0.7); /* Verde más intenso */
-  border: 2px solid #4DAE80; /* Borde verde más visible */
+  background: rgba(77, 174, 128, 0.7); 
+  border: 2px solid #4DAE80; 
 }
 
 .avoid {
-  background: rgba(239, 68, 68, 0.7); /* Rojo más intenso */
-  border: 2px solid #EF4444; /* Borde rojo más visible */
+  background: rgba(239, 68, 68, 0.7);
+  border: 2px solid #EF4444; 
 }
 
 /* El resto del código se mantiene igual */
@@ -271,7 +272,6 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    margin-top: 0.5rem !important;
     overflow: hidden !important; /* Evitar desbordamiento horizontal */
     overflow-y: hidden !important; /* NO permitir scroll vertical dentro */
   }
@@ -281,7 +281,7 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
     gap: 0.5rem !important;
     padding: 0.5rem !important;
     width: 100% !important;
-    overflow-y: hidden !important; /* NO permitir scroll vertical */
+    overflow-y: hidden !important;
   }
 
   .card {
@@ -294,6 +294,7 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
   }
   
   .top-pick {
+    width: 100% !important;
     background: rgba(77, 174, 128, 0.9) !important;
   }
   
@@ -341,7 +342,6 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     display: -webkit-box !important;
-    -webkit-line-clamp: 3 !important; /* Limitar a 3 líneas */
     -webkit-box-orient: vertical !important;
   }
   
@@ -354,9 +354,6 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
   .section-title {
     width: 100% !important;
     max-width: 100% !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
   }
 }
 </style>

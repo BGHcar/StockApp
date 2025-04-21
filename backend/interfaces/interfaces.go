@@ -40,9 +40,11 @@ type StockItem struct {
 type StockRepository interface {
 	GetAll() ([]models.Stock, error)
 	GetCount() (int64, error)
-	GetByTicker(ticker string) ([]models.Stock, error) // Ya devuelve un slice
+	UpsertStocksParallel(stocks []models.Stock, syncDate time.Time) (int, map[string]string, error)
+	GetByTicker(ticker string) ([]models.Stock, error) 
 	GetByAction(action string) ([]models.Stock, error)
-	GetByRating(rating string) ([]models.Stock, error)
+	GetByRatingTo(rating string) ([]models.Stock, error)
+	GetByRatingFrom(rating string) ([]models.Stock, error)
 	GetByBrokerage(brokerage string) ([]models.Stock, error)
 	GetByDateRange(startDate, endDate time.Time) ([]models.Stock, error)
 	GetByCompany(company string) ([]models.Stock, error)
@@ -62,7 +64,8 @@ type StockService interface {
 	GetTotalCount() (int, error)
 	GetStockByTicker(ticker string) ([]models.Stock, error)
 	GetStocksByAction(action string) ([]models.Stock, error)
-	GetStocksByRating(rating string) ([]models.Stock, error)
+	GetStocksByRatingTo(rating string) ([]models.Stock, error)
+	GetStocksByRatingFrom(rating string) ([]models.Stock, error)
 	GetStocksByCompany(company string) ([]models.Stock, error)
 	GetActionStats() (map[string]int, error)
 	GetRatingStats() (map[string]int, error)

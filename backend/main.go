@@ -71,8 +71,8 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
 	// Crear el servidor HTTPS (puerto 443)
-	httpsServer := &http.Server{
-		Addr:         "0.0.0.0:443", // Puerto HTTPS estándar
+	httpServer := &http.Server{
+		Addr:         "0.0.0.0:8081", // Puerto HTTPS estándar
 		Handler:      router,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
@@ -80,8 +80,8 @@ func main() {
 	}
 
 	// Crear el servidor HTTP (puerto 80)
-	httpServer := &http.Server{
-		Addr: "0.0.0.0:80", // Puerto HTTP estándar
+/* 	httpServer := &http.Server{
+		Addr: "0.0.0.0:8082", // Puerto HTTP estándar
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Redirigir todo el tráfico HTTP a HTTPS
 			target := "https://" + r.Host + r.URL.Path
@@ -93,17 +93,17 @@ func main() {
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout:  120 * time.Second,
-	}
+	} */
 
 	// Goroutine para manejar el servidor HTTP (puerto 80)
 	go func() {
-		log.Printf("Iniciando servidor HTTP en puerto 80 (redirección a HTTPS)...")
+		log.Printf("Iniciando servidor HTTP en puerto 8081 (redirección a HTTPS)...")
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error iniciando servidor HTTP: %v", err)
 		}
 	}()
 
-	// Goroutine para manejar el servidor HTTPS (puerto 443)
+/* 	// Goroutine para manejar el servidor HTTPS (puerto 443)
 	go func() {
 		log.Printf("Iniciando servidor HTTPS en puerto 443...")
 
@@ -123,7 +123,7 @@ func main() {
 		if err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error iniciando servidor HTTPS: %v", err)
 		}
-	}()
+	}() */
 
 	// Goroutine para manejar señales de apagado
 	go func() {
@@ -140,9 +140,9 @@ func main() {
 		}
 
 		// Cerrar servidor HTTPS
-		if err := httpsServer.Shutdown(shutdownCtx); err != nil {
+/* 		if err := httpsServer.Shutdown(shutdownCtx); err != nil {
 			log.Printf("Error durante el apagado del servidor HTTPS: %v", err)
-		}
+		} */
 
 		serverStopCtx()
 	}()

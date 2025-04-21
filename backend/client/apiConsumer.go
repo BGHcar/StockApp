@@ -56,7 +56,6 @@ func NewAPIConsumer(baseURL string) *APIConsumer {
 	}
 }
 
-// Get realiza una solicitud GET a un endpoint específico de la API
 func (api *APIConsumer) Get(endpoint string, nextPage string) (*interfaces.APIResponse, error) {
 	url := fmt.Sprintf("%s/%s", api.BaseURL, endpoint)
 	if nextPage != "" {

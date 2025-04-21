@@ -62,7 +62,8 @@ const searchOptions = [
   { value: 'company', label: 'Compañía' },
   { value: 'brokerage', label: 'Brokerage' },
   { value: 'action', label: 'Acción' },
-  { value: 'rating', label: 'Rating' },
+  { value: 'ratingFrom', label: 'Rating Ant' },
+  { value: 'ratingTo', label: 'Rating Act' },
   { value: 'price', label: 'Precio' }
 ]
 
@@ -252,7 +253,6 @@ input[type=number] {
 
   .search-container {
     padding: 0.5rem !important;
-    margin: 0 0 0.5rem 0 !important;
     width: 100% !important;
   }
 

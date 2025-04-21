@@ -30,7 +30,8 @@ func SetupRoutes(r chi.Router) {
 	r.Get("/api/stocks", controller.GetAllStocks)
 	r.Get("/api/stocks/{ticker}", controller.GetStockByTicker)
 	r.Get("/api/stocks/action/{action}", controller.GetStocksByAction)
-	r.Get("/api/stocks/rating/{rating}", controller.GetStocksByRating)
+	r.Get("/api/stocks/ratingto/{rating}", controller.GetStocksByRatingTo)
+	r.Get("/api/stocks/ratingfrom/{rating}", controller.GetStocksByRatingFrom)
 	r.Get("/api/stocks/company/{company}", controller.GetStocksByCompany)
 	r.Get("/api/stats/actions", controller.GetActionStats)
 	r.Get("/api/stats/ratings", controller.GetRatingStats)
@@ -132,7 +133,7 @@ func (c *StockController) GetStocksByAction(w http.ResponseWriter, r *http.Reque
 	respondJSON(w, stocks)
 }
 
-func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Request) {
+func (c *StockController) GetStocksByRatingTo(w http.ResponseWriter, r *http.Request) {
 	rating := chi.URLParam(r, "rating")
 	if rating == "" {
 		http.Error(w, "Rating parameter is required", http.StatusBadRequest)
@@ -145,7 +146,26 @@ func (c *StockController) GetStocksByRating(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	stocks, err := service.GetStocksByRating(rating)
+	stocks, err := service.GetStocksByRatingTo(rating)
+	if err != nil {
+		http.Error(w, "Error fetching stocks: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	respondJSON(w, stocks)
+}
+
+func (c *StockController) GetStocksByRatingFrom(w http.ResponseWriter, r *http.Request){
+	rating := chi.URLParam(r, "rating")
+	if rating == "" {
+		http.Error(w, "Rating parameter is required", http.StatusBadRequest)
+		return
+	}
+	service, err := c.factory.CreateStockService()
+	if err != nil {
+		http.Error(w, "Error creating service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	stocks, err := service.GetStocksByRatingFrom(rating)
 	if err != nil {
 		http.Error(w, "Error fetching stocks: "+err.Error(), http.StatusInternalServerError)
 		return

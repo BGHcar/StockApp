@@ -1,6 +1,3 @@
-// File: db.go
-// File: backend/db/db.go
-
 package db
 
 import (
@@ -18,7 +15,8 @@ import (
 )
 
 // DB es la conexión global a la base de datos
-var DB *gorm.DB
+var DB *gorm.DB  // el *gorm.DB es el objeto de conexión a la base de datos, * es para que sea un puntero a la conexión
+
 
 // DBAdapter adapta gorm.DB a la interfaz DatabaseHandler
 type DBAdapter struct {
@@ -52,8 +50,9 @@ func InitDB() {
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
-			SlowThreshold: time.Second,
-			LogLevel:      logger.Info,
+			SlowThreshold: 200 * time.Second,
+			LogLevel:      logger.Warn,
+			IgnoreRecordNotFoundError: true,
 			Colorful:      true,
 		},
 	)

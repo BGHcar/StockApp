@@ -49,8 +49,12 @@ func (s *StockService) GetStocksByAction(action string) ([]models.Stock, error) 
 }
 
 // GetStocksByRating obtiene stocks filtrados por rating
-func (s *StockService) GetStocksByRating(rating string) ([]models.Stock, error) {
-	return s.repo.GetByRating(rating)
+func (s *StockService) GetStocksByRatingTo(rating string) ([]models.Stock, error) {
+	return s.repo.GetByRatingTo(rating)
+}
+
+func (s *StockService) GetStocksByRatingFrom(rating string) ([]models.Stock, error) {
+	return s.repo.GetByRatingFrom(rating)
 }
 
 func (s *StockService) GetStocksByBrokerage(brokerage string) ([]models.Stock, error) {
@@ -88,11 +92,9 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 	log.Printf("Iniciando sincronización de datos a las %s",
 		startTime.Format("15:04:05"))
 
-	// Limpiar la tabla antes de sincronizar
-	if err := s.repo.TruncateTable(); err != nil {
-		return result, fmt.Errorf("error truncating table: %w", err)
-	}
-	log.Println("Tabla stocks limpiada correctamente")
+	// Ya NO limpiamos la tabla antes de sincronizar
+	// En lugar de eso, marcaremos la fecha de sincronización para saber qué datos son nuevos
+	syncDate := time.Now()
 
 	// Recolectar datos de la API
 	stockItems, duplicates, err := s.collectAPIData()
@@ -109,18 +111,18 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 	// Convertir a modelos de dominio
 	stocks := s.convertToModels(stockItems)
 
-	log.Printf("Iniciando inserción paralela de %d registros...", len(stocks))
+	log.Printf("Iniciando inserción/actualización de %d registros...", len(stocks))
 	insertStartTime := time.Now()
 
-	// Usar la nueva inserción paralela
-	inserted, failedInserts, err := s.repo.InsertStocksParallel(stocks)
+	// Usar la inserción que maneja actualizaciones (upsert)
+	inserted, failedInserts, err := s.repo.UpsertStocksParallel(stocks, syncDate)
 
 	insertDuration := time.Since(insertStartTime)
-	log.Printf("Inserción completada en %.2f segundos",
+	log.Printf("Operación completada en %.2f segundos",
 		insertDuration.Seconds())
 
 	if err != nil {
-		return result, fmt.Errorf("error inserting stocks: %w", err)
+		return result, fmt.Errorf("error inserting/updating stocks: %w", err)
 	}
 
 	// Completar el resultado

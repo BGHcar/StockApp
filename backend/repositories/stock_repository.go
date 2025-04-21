@@ -66,9 +66,17 @@ func (r *StockRepository) GetByAction(action string) ([]models.Stock, error) {
 }
 
 // GetByRating obtiene stocks filtrados por rating
-func (r *StockRepository) GetByRating(rating string) ([]models.Stock, error) {
+func (r *StockRepository) GetByRatingTo(rating string) ([]models.Stock, error) {
 	var stocks []models.Stock
 	result := r.db.DB().Where("rating_to ILIKE ?", "%"+rating+"%").
+		Order("time DESC").
+		Find(&stocks)
+	return stocks, result.Error
+}
+
+func (r *StockRepository) GetByRatingFrom(rating string) ([]models.Stock, error) {
+	var stocks []models.Stock
+	result := r.db.DB().Where("rating_from ILIKE ?", "%"+rating+"%").
 		Order("time DESC").
 		Find(&stocks)
 	return stocks, result.Error
@@ -277,6 +285,147 @@ func (r *StockRepository) InsertStocksParallel(stocks []models.Stock) (int, map[
 	})
 
 	log.Printf("Inserción paralela completada: %d elementos insertados, %d errores",
+		resultInserted, len(resultFailed))
+
+	return resultInserted, resultFailed, nil
+}
+
+// UpsertStocksParallel inserta o actualiza múltiples registros en paralelo
+func (r *StockRepository) UpsertStocksParallel(stocks []models.Stock, syncDate time.Time) (int, map[string]string, error) {
+	inserted := int32(0)
+	updated := int32(0)
+	skipped := int32(0) // Agregamos contador de registros sin cambios
+	processedTickers := sync.Map{}
+	failedTickers := sync.Map{}
+
+	// Número de workers y tamaño de lotes
+	numWorkers := 10
+	batchSize := 50
+
+	// Dividir los stocks en lotes
+	var stockBatches [][]models.Stock
+	for i := 0; i < len(stocks); i += batchSize {
+		end := i + batchSize
+		if end > len(stocks) {
+			end = len(stocks)
+		}
+		stockBatches = append(stockBatches, stocks[i:end])
+	}
+
+	log.Printf("Procesando %d registros en %d lotes con %d workers",
+		len(stocks), len(stockBatches), numWorkers)
+
+	// Canal para distribuir lotes a workers
+	batchChan := make(chan []models.Stock, len(stockBatches))
+	var wg sync.WaitGroup
+
+	// Iniciar workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(workerId int) {
+			defer wg.Done()
+
+			// Cada worker procesa lotes del canal
+			for batch := range batchChan {
+				if len(batch) == 0 {
+					continue
+				}
+
+				// Crear transacción para el lote
+				tx := r.db.DB().Begin()
+
+				for _, stock := range batch {
+					// Verificar si el registro ya existe
+					var existingStock models.Stock
+					err := tx.Where("ticker = ? AND time = ?", stock.Ticker, stock.Time).First(&existingStock).Error
+
+					isNewRecord := err != nil // Si hay error, el registro no existe
+
+					// Si el registro existe, verificar si hay cambios reales
+					needsUpdate := true
+					if !isNewRecord {
+						// Verificar si los campos relevantes han cambiado
+						if existingStock.Company == stock.Company &&
+							existingStock.TargetFrom == stock.TargetFrom &&
+							existingStock.TargetTo == stock.TargetTo &&
+							existingStock.Action == stock.Action &&
+							existingStock.Brokerage == stock.Brokerage &&
+							existingStock.RatingFrom == stock.RatingFrom &&
+							existingStock.RatingTo == stock.RatingTo {
+							// No hay cambios significativos, podemos omitir la actualización
+							needsUpdate = false
+							atomic.AddInt32(&skipped, 1)
+							continue // Saltar al siguiente registro
+						}
+					}
+
+					// Solo si es nuevo registro o necesita actualización
+					if isNewRecord || needsUpdate {
+						// Agregar campo con fecha de sincronización a UpdatedAt
+						stock.UpdatedAt = syncDate
+
+						// Usar clause.OnConflict para hacer upsert
+						result := tx.Clauses(clause.OnConflict{
+							Columns: []clause.Column{{Name: "ticker"}, {Name: "time"}},
+							DoUpdates: clause.AssignmentColumns([]string{
+								"company", "target_from", "target_to", "action",
+								"brokerage", "rating_from", "rating_to", "updated_at",
+							}),
+						}).Create(&stock)
+
+						if result.Error != nil {
+							failedTickers.Store(stock.Ticker, result.Error.Error())
+						} else {
+							ticker := stock.Ticker
+							if _, loaded := processedTickers.LoadOrStore(ticker, true); !loaded {
+								// Determinar si fue inserción o actualización basado en la existencia previa
+								if isNewRecord {
+									atomic.AddInt32(&inserted, 1)
+								} else {
+									atomic.AddInt32(&updated, 1)
+								}
+							}
+						}
+					}
+				}
+
+				// Commit transacción
+				if err := tx.Commit().Error; err != nil {
+					log.Printf("Error en worker %d al hacer commit del lote: %v", workerId, err)
+					for _, stock := range batch {
+						failedTickers.Store(stock.Ticker, err.Error())
+					}
+				}
+			}
+		}(i)
+	}
+
+	// Enviar lotes a los workers
+	for _, batch := range stockBatches {
+		batchChan <- batch
+	}
+
+	close(batchChan)
+	wg.Wait()
+
+	// Registrar estadísticas de operaciones
+	insertedCount := int(inserted)
+	updatedCount := int(updated)
+	skippedCount := int(skipped)
+
+	log.Printf("Upsert completado: %d insertados, %d actualizados, %d sin cambios (omitidos)",
+		insertedCount, updatedCount, skippedCount)
+
+	// Convertir resultados de sync.Map a map estándar
+	resultInserted := insertedCount + updatedCount // Total de registros procesados
+	resultFailed := make(map[string]string)
+
+	failedTickers.Range(func(key, value interface{}) bool {
+		resultFailed[key.(string)] = value.(string)
+		return true
+	})
+
+	log.Printf("Upsert paralelo completado: %d elementos procesados, %d errores",
 		resultInserted, len(resultFailed))
 
 	return resultInserted, resultFailed, nil

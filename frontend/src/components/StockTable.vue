@@ -23,8 +23,13 @@
             <td v-for="header in headers" 
                 :key="header.key"
                 :class="header.class">
-              {{ stock[header.key] }}
-            </td>
+<!--                 <template v-if = "header.key != 'time'">
+                  {{ stock[header.key] }}
+                </template>
+                <template v-else>
+                </template> -->
+                {{ formatDate(stock[header.key]) }}
+              </td>
           </tr>
         </tbody>
       </table>
@@ -41,13 +46,28 @@ import BaseScroll from './base/BaseScroll.vue'
 
 const props = defineProps<{ 
   stocks: Stock[],
-  headers: TableHeader[] 
+  headers: TableHeader[]
 }>()
 
 // Estado para el ordenamiento
 const sortKey = ref<keyof Stock | null>(null);
 const sortOrder = ref<'asc' | 'desc'>('asc');
 
+
+function formatDate (dateString: string) : string{
+  const date = new Date(dateString);
+  
+  if (isNaN(date.getTime())) return dateString;
+
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+}
 // Función para ordenar
 function sort(key: keyof Stock) {
   if (sortKey.value === key) {
@@ -97,8 +117,9 @@ const sortedStocks = computed(() => {
   position: relative;
   background: #D1CEC8;
   box-shadow: 0 3px 5px rgba(173, 169, 150, 0.2);
-  border: 2px solid #646464; /* Borde más oscuro y consistente */
+  border: 2px solid #646464;
   border-radius: 8px;
+  max-height: calc(100vh - 260px);
 }
 
 /* El resto del CSS se mantiene igual */
@@ -145,7 +166,6 @@ th:nth-child(6), th:nth-child(7) {
 .sortable {
   cursor: pointer;
   user-select: none;
-  position: relative; /* Para crear un nuevo contexto de apilamiento */
 }
 
 .sortable:hover::after {
@@ -167,15 +187,6 @@ th:nth-child(6), th:nth-child(7) {
   font-size: 0.7em;
 }
 
-th:nth-child(1), td:nth-child(1) { width: 8%; } /* Ticker */
-th:nth-child(2), td:nth-child(2) { width: 15%; } /* Compañía */
-th:nth-child(3), td:nth-child(3) { width: 15%; } /* Brokerage */
-th:nth-child(4), td:nth-child(4) { width: 12%; } /* Acción */
-th:nth-child(5), td:nth-child(5) { width: 10%; } /* Rating Ant. */
-th:nth-child(6), td:nth-child(6) { width: 10%; } /* Rating Act. */
-th:nth-child(7), td:nth-child(7) { width: 10%; } /* Precio Desde */
-th:nth-child(8), td:nth-child(8) { width: 10%; } /* Precio Hasta */
-th:nth-child(9), td:nth-child(9) { width: 10%; } /* Fecha */
 
 td {
   background: rgba(255, 255, 255, 0.7); /* Fondo claro semi-transparente */
@@ -188,54 +199,5 @@ tr:hover td {
   color: #000; /* Texto más oscuro en hover */
   transition: background-color 0.3s ease;
   box-shadow: inset 0 0 5px rgba(173, 169, 150, 0.2); /* Sombra interna sutil */
-}
-
-@media (max-width: 768px) {
-  .table-container {
-    overflow-x: auto !important; /* Permitir scroll horizontal */
-    overflow-y: hidden !important; /* NO permitir scroll vertical dentro de la tabla */
-    width: 100% !important;
-    max-width: 100% !important;
-    height: calc(100vh - 120px) !important; /* Ocupar el resto de la pantalla móvil */
-    padding: 0 !important;
-    margin: 0 !important;
-    border-radius: 4px !important;
-    background: #D1CEC8 !important;
-  }
-
-  .stock-table {
-    width: 600px !important; 
-    min-width: 600px !important;
-    table-layout: fixed !important;
-  }
-
-  th {
-    position: sticky !important;
-    top: 0 !important;
-    font-size: 0.7rem !important;
-    padding: 0.25rem !important;
-    background: #646464 !important;
-    z-index: 10 !important;
-  }
-
-  td {
-    font-size: 0.7rem !important;
-    padding: 0.25rem !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    background: rgba(255, 255, 255, 0.7) !important;
-  }
-  
-  /* Ajustar anchos para móvil */
-  th:nth-child(1), td:nth-child(1) { width: 10% !important; } /* Ticker */
-  th:nth-child(2), td:nth-child(2) { width: 15% !important; } /* Compañía */
-  th:nth-child(3), td:nth-child(3) { width: 15% !important; } /* Brokerage */
-  th:nth-child(4), td:nth-child(4) { width: 12% !important; } /* Acción */
-  th:nth-child(5), td:nth-child(5) { width: 12% !important; } /* Rating Ant. */
-  th:nth-child(6), td:nth-child(6) { width: 12% !important; } /* Rating Act. */
-  th:nth-child(7), td:nth-child(7) { width: 8% !important; } /* Precio Desde */
-  th:nth-child(8), td:nth-child(8) { width: 8% !important; } /* Precio Hasta */
-  th:nth-child(9), td:nth-child(9) { width: 8% !important; } /* Fecha */
 }
 </style>
