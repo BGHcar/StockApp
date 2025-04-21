@@ -189,4 +189,53 @@ tr:hover td {
   transition: background-color 0.3s ease;
   box-shadow: inset 0 0 5px rgba(173, 169, 150, 0.2); /* Sombra interna sutil */
 }
+
+@media (max-width: 768px) {
+  .table-container {
+    overflow-x: auto !important; /* Permitir scroll horizontal */
+    overflow-y: hidden !important; /* NO permitir scroll vertical dentro de la tabla */
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc(100vh - 120px) !important; /* Ocupar el resto de la pantalla móvil */
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 4px !important;
+    background: #D1CEC8 !important;
+  }
+
+  .stock-table {
+    width: 600px !important; 
+    min-width: 600px !important;
+    table-layout: fixed !important;
+  }
+
+  th {
+    position: sticky !important;
+    top: 0 !important;
+    font-size: 0.7rem !important;
+    padding: 0.25rem !important;
+    background: #646464 !important;
+    z-index: 10 !important;
+  }
+
+  td {
+    font-size: 0.7rem !important;
+    padding: 0.25rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+  }
+  
+  /* Ajustar anchos para móvil */
+  th:nth-child(1), td:nth-child(1) { width: 10% !important; } /* Ticker */
+  th:nth-child(2), td:nth-child(2) { width: 15% !important; } /* Compañía */
+  th:nth-child(3), td:nth-child(3) { width: 15% !important; } /* Brokerage */
+  th:nth-child(4), td:nth-child(4) { width: 12% !important; } /* Acción */
+  th:nth-child(5), td:nth-child(5) { width: 12% !important; } /* Rating Ant. */
+  th:nth-child(6), td:nth-child(6) { width: 12% !important; } /* Rating Act. */
+  th:nth-child(7), td:nth-child(7) { width: 8% !important; } /* Precio Desde */
+  th:nth-child(8), td:nth-child(8) { width: 8% !important; } /* Precio Hasta */
+  th:nth-child(9), td:nth-child(9) { width: 8% !important; } /* Fecha */
+}
 </style>

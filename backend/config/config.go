@@ -28,6 +28,7 @@ type Config struct {
 		Token string
 	}
 	Server struct {
+		Host         string
 		Port         string
 		ReadTimeout  time.Duration
 		WriteTimeout time.Duration
@@ -67,6 +68,10 @@ func GetConfig() *Config {
 		config.API.Token = os.Getenv("API_TOKEN")
 
 		// Configuración del servidor
+		config.Server.Host = os.Getenv("HOST")
+		if config.Server.Host == "" {
+			config.Server.Host = "0.0.0.0" // Por defecto escucha en todas las interfaces
+		}
 		config.Server.Port = os.Getenv("PORT")
 		if config.Server.Port == "" {
 			config.Server.Port = "8080"

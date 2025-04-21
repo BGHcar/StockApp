@@ -265,4 +265,98 @@ const avoid = computed(() => scoredStocks.value.length > 0 ? scoredStocks.value[
   margin-top: auto;
   text-align: left; /* Texto alineado a la izquierda */
 }
+
+@media (max-width: 768px) {
+  .recommendations-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin-top: 0.5rem !important;
+    overflow: hidden !important; /* Evitar desbordamiento horizontal */
+    overflow-y: hidden !important; /* NO permitir scroll vertical dentro */
+  }
+
+  .recommendation-cards {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem !important;
+    width: 100% !important;
+    overflow-y: hidden !important; /* NO permitir scroll vertical */
+  }
+
+  .card {
+    width: 100% !important;
+    max-width: calc(100% - 1rem) !important; /* Dejar margen para evitar desbordamiento */
+    margin: 0 0 0.5rem 0 !important;
+    padding: 0.5rem !important;
+    border-radius: 4px !important;
+    overflow: hidden !important; /* Evitar desbordamiento del contenido */
+  }
+  
+  .top-pick {
+    background: rgba(77, 174, 128, 0.9) !important;
+  }
+  
+  .avoid {
+    background: rgba(239, 68, 68, 0.9) !important;
+  }
+
+  .ticker {
+    font-size: 1rem !important;
+    margin-bottom: 0.1rem !important;
+    color: #fff !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+  }
+
+  .company {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.3rem !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+  }
+
+  .details {
+    margin-bottom: 0.3rem !important;
+    padding-top: 0.3rem !important;
+    width: 100% !important;
+  }
+
+  .rating, .target, .score {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.1rem !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+  }
+
+  .reason {
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important; /* Limitar a 3 líneas */
+    -webkit-box-orient: vertical !important;
+  }
+  
+  .recommendations-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important; /* Contener el desbordamiento */
+  }
+  
+  .section-title {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
 </style>

@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL
 export async function fetchStocks(): Promise<Stock[]> {
   try {
     const response = await fetch(`${API_URL}/stocks`)
-    if (!response.ok) throw new Error('Error al obtener stocks')
+    if (!response.ok) throw new Error(`Error al obtener stocks: ${response.status}`)
     const data = await response.json()
     return data || []
   } catch (error) {

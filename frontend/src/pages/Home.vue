@@ -195,4 +195,56 @@ function handleReset() {
   margin: 1rem 0;
   border: 2px solid #646464; /* Borde más oscuro y consistente */
 }
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    height: auto !important; /* Altura automática */
+    min-height: 100vh !important;
+    overflow-y: visible !important; /* Permitir scroll */
+  }
+
+  .title {
+    font-size: 1.2rem !important;
+    margin: 0 0 0.5rem 0 !important;
+    padding: 0.25rem !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .content {
+    gap: 0.5rem !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-y: visible !important; /* Permitir scroll */
+  }
+
+  .components-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0.5rem !important;
+    height: auto !important;
+    overflow: visible !important; /* Permitir que el contenido se desborde */
+  }
+  
+  .search-container, .table-container, .recommendations-container {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .table-container {
+    height: calc(100vh - 120px) !important; /* Ocupar el resto de la pantalla */
+    max-height: none !important;
+  }
+  
+  .recommendations-container {
+    height: auto !important;
+    margin-top: 0.5rem !important;
+  }
+}
 </style>

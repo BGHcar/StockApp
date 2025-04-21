@@ -225,4 +225,129 @@ input[type=number] {
   border-color: #646464;
   box-shadow: 0 0 0 2px rgba(173, 169, 150, 0.3); /* Sombra de foco acorde al tema */
 }
+
+@media (max-width: 768px) {
+  .search-form {
+    flex-direction: column; /* Cambiar a diseño vertical */
+    gap: 0.75rem;
+  }
+
+  .search-select,
+  .search-input,
+  .price-input,
+  .btn {
+    width: 100%; /* Asegurar que ocupen todo el ancho */
+    font-size: 0.9rem; /* Reducir el tamaño de fuente */
+  }
+
+  .price-range-container {
+    flex-direction: column; /* Cambiar a diseño vertical */
+    gap: 0.5rem;
+  }
+
+  .button-group {
+    flex-direction: column; /* Botones en columna */
+    gap: 0.5rem;
+  }
+
+  .search-container {
+    padding: 0.5rem !important;
+    margin: 0 0 0.5rem 0 !important;
+    width: 100% !important;
+  }
+
+  .search-form {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .search-select {
+    grid-column: 1 / -1 !important; /* Span en toda la fila */
+    width: 100% !important;
+    padding: 0.25rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .search-input, 
+  .price-input {
+    padding: 0.25rem !important;
+    font-size: 0.8rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .price-range-container {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    gap: 0.5rem !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .button-group {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .btn {
+    padding: 0.25rem !important;
+    font-size: 0.8rem !important;
+    width: 100% !important;
+  }
+
+  /* ... mantener estilos existentes ... */
+  
+  .search-form {
+    display: grid !important;
+    grid-template-columns: 1fr !important; /* Cambiar a una columna */
+    gap: 0.5rem !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+    max-width: 100% !important; /* Importante para evitar desbordamiento */
+  }
+
+  .search-select {
+    grid-column: 1 !important; /* Ocupar solo una columna */
+    width: 100% !important;
+    padding: 0.25rem !important;
+    font-size: 0.8rem !important;
+    max-width: 100% !important; /* Evitar desbordamiento */
+    text-overflow: ellipsis !important; /* Cortar texto si es necesario */
+  }
+
+  .search-input, 
+  .price-input {
+    grid-column: 1 !important;
+    padding: 0.25rem !important;
+    font-size: 0.8rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important; /* Evitar desbordamiento */
+  }
+
+  .price-range-container {
+    grid-column: 1 !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    gap: 0.5rem !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important; /* Evitar desbordamiento */
+  }
+
+  .button-group {
+    grid-column: 1 !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important; /* Evitar desbordamiento */
+  }
+}
 </style>
