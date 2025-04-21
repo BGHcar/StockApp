@@ -1,7 +1,8 @@
 # Variables de entorno y configuraciones locales
 .env
 *.env
-tests
+run_tests.bat
+
 
 
 # Archivos y directorios de Terraform
