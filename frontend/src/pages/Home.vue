@@ -2,9 +2,7 @@
   <div class="container">
     <div class="title">
       <h1 class="title-text font-bold text-2xl text-white text-center">
-        <span class="text-[#ef4444]">STOCKS </span>
-        <span class="text-[#60a5fa]">SEARCH </span>
-        <span class="text-white">APP</span> <!-- Cambiado de verde a blanco -->
+        STOCKS SEARCH APP
       </h1>
     </div>
 
@@ -73,8 +71,22 @@ function handleReset() {
   width: 100%;
   max-width: 1366px;
   margin: 0 auto;
-  background-color: #292f36;
+  background-color: #292F36;
   border-radius: 8px;
+}
+
+.status-message {
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  font: bold 2rem 'Arial', sans-serif;
+  color: #fff;
+  background-color: #9dcbba;
+  border-radius: 8px;
+  border: 1px solid;
+  -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
 }
 
 .content {
@@ -95,8 +107,9 @@ function handleReset() {
 }
 
 .title-text {
-  font-size: 2rem;
-  background-color: #937666;
+  font-size: 2.5rem;
+  font-weight: bold;
+  background-color: #9dcbba;
   border-radius: 8px;
   padding: 8px;
   -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
@@ -111,7 +124,7 @@ function handleReset() {
 .search-container {
   border-radius: 8px;
   width: 100%;
-  background-color: #937666;
+  background-color: #9dcbba;
   padding: 8px;
   -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
   -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
@@ -125,7 +138,7 @@ function handleReset() {
   height: 70vh;
   width: 100%;
   overflow: auto;
-  background-color: #937666;
+  background-color: #9dcbba;
   -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
   -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
   box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
@@ -134,10 +147,22 @@ function handleReset() {
 .recommendations-container {
   border: 1px solid;
   border-radius: 8px;
-  background-color: #937666;
+  background-color: #9dcbba;
   padding: 8px;
   -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
   -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
   box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
 }
+
+
+@media (min-width: 768px) {
+  .table-container {
+  height: 40vh;
+}
+
+  .content{
+    height: 90vh;
+  }
+}
+
 </style>

@@ -142,6 +142,14 @@ function goToPage(page: number) {
   background: transparent; /* Cambiado para que use el gradiente del contenedor */
 }
 
+
+.no-data-cell{
+  text-align: center;
+  padding: 1rem;
+  font-size: 1.2rem;
+  color: #646464; /* Color de texto acorde al tema */
+  background: rgba(255, 255, 255, 0.5); 
+}
 /* Definimos anchos específicos para cada columna */
 th, td {
   padding: 0.35rem 0.5rem;
@@ -216,13 +224,16 @@ tr:hover td {
   display: flex;
   justify-content: center;
   padding: 8px 0;
+  background-color: #646464;
+  font-family: 15px Arial, Helvetica, sans-serif;
+  border: 1px solid rgba(173, 169, 150, 0.3);
+  text-transform: uppercase;
 }
 
 .pagination-info {
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 700;
   color: white;
-  text-transform: uppercase;
 }
 
 .pagination-button {
@@ -232,12 +243,12 @@ tr:hover td {
   padding: 0.35rem 0.75rem;
   border-radius: 0.5rem;
   border: 1px solid rgba(173, 169, 150, 0.5);
-  background: #646464;
+  background: #4a4a4a;
   color: white;
   box-shadow: 0 1px 3px rgba(173, 169, 150, 0.3);
 }
 .pagination-button:hover {
-  background: rgba(173, 169, 150, 0.2);
+  background:#333;
   border: 1px solid #646464;
 }
 .pagination-button:focus {
