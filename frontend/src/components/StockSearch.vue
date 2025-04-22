@@ -3,40 +3,22 @@
   <BaseTable>
     <div class="search-container">
       <form @submit.prevent="onSearch" class="search-form">
-        <select v-model="type" class="search-select">
-          <option v-for="option in searchOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
+        <div class="search-select">
+          <select v-model="type" class="select">
+            <option v-for="option in searchOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
 
-        <!-- Input normal para otros tipos de búsqueda -->
-        <input 
-          v-if="type !== 'price'" 
-          v-model="query" 
-          type="text" 
-          class="search-input" 
-          :placeholder="placeholder" 
-        />
+          <!-- Input normal para otros tipos de búsqueda -->
+          <input v-if="type !== 'price'" v-model="query" type="text" class="search-input" :placeholder="placeholder" />
 
-        <!-- Inputs para rango de precios -->
-        <div v-else class="price-range-container">
-          <input 
-            v-model="minPrice" 
-            type="number" 
-            class="price-input" 
-            placeholder="Mínimo" 
-            min="0"
-            step="0.01"
-          />
-          <span class="price-separator">a</span>
-          <input 
-            v-model="maxPrice" 
-            type="number" 
-            class="price-input" 
-            placeholder="Máximo" 
-            min="0"
-            step="0.01"
-          />
+          <!-- Inputs para rango de precios -->
+          <div v-else class="price-range-container">
+            <input v-model="minPrice" type="number" class="price-input" placeholder="Mínimo" min="0" step="0.01" />
+            <span class="price-separator">a</span>
+            <input v-model="maxPrice" type="number" class="price-input" placeholder="Máximo" min="0" step="0.01" />
+          </div>
         </div>
 
         <div class="button-group">
@@ -95,7 +77,7 @@ function onSearch() {
     if (!minPrice.value || !maxPrice.value) {
       return
     }
-    
+
     // Para búsqueda por rango de precio, concatenamos los valores con un guion
     emit('search', 'price', `${minPrice.value}-${maxPrice.value}`)
   } else {
@@ -118,30 +100,27 @@ function onReset() {
 </script>
 
 <style scoped>
-.search-container {
-  padding: 0;
-  background: #D1CEC8;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(173, 169, 150, 0.25);
-  border: 2px solid #646464; /* Borde más oscuro y consistente */
-}
-
 .search-form {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem; /* Mover el padding aquí */
+  flex-direction: column;
+  gap: 16px;
+  align-items: space-between;
 }
 
-.search-select,
+.search-select {
+  display: flex;
+  flex: auto;
+  gap: 8px;
+}
+
+.select,
 .search-input,
 .btn {
   padding: 0.35rem 0.75rem;
   border-radius: 0.5rem;
   border: 1px solid rgba(173, 169, 150, 0.5);
   background: #646464;
-  color: white; /* Asegurar que el texto sea blanco en todos estos elementos */
+  color: white;
   box-shadow: 0 1px 3px rgba(173, 169, 150, 0.3);
 }
 
@@ -185,6 +164,7 @@ function onReset() {
 
 .button-group {
   display: flex;
+  justify-content: space-between;
   gap: 0.35rem;
 }
 
@@ -192,6 +172,7 @@ function onReset() {
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: bold;
+  flex: 50%;
 }
 
 /* Unificar el color de ambos botones */
@@ -218,7 +199,7 @@ input[type=number] {
 }
 
 /* Añadir un estilo de foco para mejorar la accesibilidad */
-.search-select:focus,
+.select:focus,
 .search-input:focus,
 .price-input:focus,
 .btn:focus {
@@ -227,127 +208,10 @@ input[type=number] {
   box-shadow: 0 0 0 2px rgba(173, 169, 150, 0.3); /* Sombra de foco acorde al tema */
 }
 
-@media (max-width: 768px) {
+@media (min-width: 640px) {
   .search-form {
-    flex-direction: column; /* Cambiar a diseño vertical */
-    gap: 0.75rem;
-  }
-
-  .search-select,
-  .search-input,
-  .price-input,
-  .btn {
-    width: 100%; /* Asegurar que ocupen todo el ancho */
-    font-size: 0.9rem; /* Reducir el tamaño de fuente */
-  }
-
-  .price-range-container {
-    flex-direction: column; /* Cambiar a diseño vertical */
-    gap: 0.5rem;
-  }
-
-  .button-group {
-    flex-direction: column; /* Botones en columna */
-    gap: 0.5rem;
-  }
-
-  .search-container {
-    padding: 0.5rem !important;
-    width: 100% !important;
-  }
-
-  .search-form {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 0.5rem !important;
-    width: 100% !important;
-  }
-
-  .search-select {
-    grid-column: 1 / -1 !important; /* Span en toda la fila */
-    width: 100% !important;
-    padding: 0.25rem !important;
-    font-size: 0.8rem !important;
-  }
-
-  .search-input, 
-  .price-input {
-    padding: 0.25rem !important;
-    font-size: 0.8rem !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .price-range-container {
-    grid-column: 1 / -1 !important;
-    display: grid !important;
-    grid-template-columns: 1fr auto 1fr !important;
-    gap: 0.5rem !important;
-    align-items: center !important;
-    width: 100% !important;
-  }
-
-  .button-group {
-    grid-column: 1 / -1 !important;
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 0.5rem !important;
-    width: 100% !important;
-  }
-
-  .btn {
-    padding: 0.25rem !important;
-    font-size: 0.8rem !important;
-    width: 100% !important;
-  }
-
-  /* ... mantener estilos existentes ... */
-  
-  .search-form {
-    display: grid !important;
-    grid-template-columns: 1fr !important; /* Cambiar a una columna */
-    gap: 0.5rem !important;
-    width: 100% !important;
-    overflow-x: hidden !important;
-    max-width: 100% !important; /* Importante para evitar desbordamiento */
-  }
-
-  .search-select {
-    grid-column: 1 !important; /* Ocupar solo una columna */
-    width: 100% !important;
-    padding: 0.25rem !important;
-    font-size: 0.8rem !important;
-    max-width: 100% !important; /* Evitar desbordamiento */
-    text-overflow: ellipsis !important; /* Cortar texto si es necesario */
-  }
-
-  .search-input, 
-  .price-input {
-    grid-column: 1 !important;
-    padding: 0.25rem !important;
-    font-size: 0.8rem !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important; /* Evitar desbordamiento */
-  }
-
-  .price-range-container {
-    grid-column: 1 !important;
-    display: grid !important;
-    grid-template-columns: 1fr auto 1fr !important;
-    gap: 0.5rem !important;
-    align-items: center !important;
-    width: 100% !important;
-    max-width: 100% !important; /* Evitar desbordamiento */
-  }
-
-  .button-group {
-    grid-column: 1 !important;
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 0.5rem !important;
-    width: 100% !important;
-    max-width: 100% !important; /* Evitar desbordamiento */
+    flex-direction: row;
+    justify-content: space-between;
   }
 }
 </style>

@@ -3,14 +3,14 @@ package repositories
 import (
 	"backend/interfaces"
 	"backend/models"
-	"fmt"
 	"log"
-	"strconv"
+	"math" // Necesario para Ceiling
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"gorm.io/gorm/clause" // Importar el paquete clause
+	// Asegúrate de que gorm esté importado
+	"gorm.io/gorm/clause"
 )
 
 // StockRepository implementa la interfaz Repository
@@ -28,59 +28,235 @@ func NewStockRepository(db interfaces.DatabaseHandler) *StockRepository {
 	}
 }
 
-// TruncateTable elimina todos los registros de la tabla stocks
-func (r *StockRepository) TruncateTable() error {
-	return r.db.DB().Exec("TRUNCATE TABLE stocks").Error
+// --- Helper para calcular totalPages ---
+func calculateTotalPages(totalItems int64, pageSize int) int {
+	if pageSize <= 0 {
+		return 0 // O 1 si prefieres que siempre haya al menos una página
+	}
+	return int(math.Ceil(float64(totalItems) / float64(pageSize)))
 }
 
-// GetAll obtiene todos los stocks de la base de datos
-func (r *StockRepository) GetAll() ([]models.Stock, error) {
+// GetAll obtiene todos los stocks de la base de datos paginados
+func (r *StockRepository) GetAll(page, pageSize int) ([]models.Stock, int, int, error) {
 	var stocks []models.Stock
-	result := r.db.DB().Order("time DESC").Find(&stocks)
-	return stocks, result.Error
+	var totalCount int64
+
+	// Contar total de items (GORM devuelve int64)
+	if err := r.db.DB().Model(&models.Stock{}).Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	// Calcular offset
+	offset := (page - 1) * pageSize
+
+	// Obtener items paginados
+	result := r.db.DB().
+		Order("time DESC").
+		Limit(pageSize).
+		Offset(offset).
+		Find(&stocks)
+
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	// Calcular totalPages
+	totalPages := calculateTotalPages(totalCount, pageSize)
+
+	return stocks, int(totalCount), totalPages, nil // Devolver int, int, error
 }
 
 // GetCount obtiene el número total de registros en la tabla stocks
-func (r *StockRepository) GetCount() (int64, error) {
+func (r *StockRepository) GetCount() (int, error) {
 	var count int64
 	result := r.db.DB().Model(&models.Stock{}).Count(&count)
-	return count, result.Error
+	return int(count), result.Error // Convertir a int
 }
 
-// GetByTicker obtiene stocks que coincidan con el ticker (búsqueda parcial)
-func (r *StockRepository) GetByTicker(ticker string) ([]models.Stock, error) {
+// GetByTicker obtiene stocks que coincidan con el ticker (búsqueda parcial) paginados
+func (r *StockRepository) GetByTicker(ticker string, page, pageSize int) ([]models.Stock, int, int, error) {
 	var stocks []models.Stock
-	result := r.db.DB().Where("ticker ILIKE ?", "%"+ticker+"%").
-		Order("time DESC").
-		Find(&stocks)
-	return stocks, result.Error
+	var totalCount int64
+	query := r.db.DB().Model(&models.Stock{}).Where("ticker ILIKE ?", "%"+ticker+"%")
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
 }
 
-// GetByAction obtiene stocks filtrados por tipo de acción
-func (r *StockRepository) GetByAction(action string) ([]models.Stock, error) {
+// GetByAction obtiene stocks filtrados por tipo de acción paginados
+func (r *StockRepository) GetByAction(action string, page, pageSize int) ([]models.Stock, int, int, error) {
 	var stocks []models.Stock
-	result := r.db.DB().Where("action ILIKE ?", "%"+action+"%").
-		Order("time DESC").
-		Find(&stocks)
-	return stocks, result.Error
+	var totalCount int64
+	query := r.db.DB().Model(&models.Stock{}).Where("action ILIKE ?", "%"+action+"%")
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
 }
 
-// GetByRating obtiene stocks filtrados por rating
-func (r *StockRepository) GetByRatingTo(rating string) ([]models.Stock, error) {
+// GetByRatingTo obtiene stocks filtrados por rating_to paginados
+func (r *StockRepository) GetByRatingTo(rating string, page, pageSize int) ([]models.Stock, int, int, error) {
 	var stocks []models.Stock
-	result := r.db.DB().Where("rating_to ILIKE ?", "%"+rating+"%").
-		Order("time DESC").
-		Find(&stocks)
-	return stocks, result.Error
+	var totalCount int64
+	query := r.db.DB().Model(&models.Stock{}).Where("rating_to ILIKE ?", "%"+rating+"%")
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
 }
 
-func (r *StockRepository) GetByRatingFrom(rating string) ([]models.Stock, error) {
+// GetByRatingFrom obtiene stocks filtrados por rating_from paginados
+func (r *StockRepository) GetByRatingFrom(rating string, page, pageSize int) ([]models.Stock, int, int, error) {
 	var stocks []models.Stock
-	result := r.db.DB().Where("rating_from ILIKE ?", "%"+rating+"%").
-		Order("time DESC").
-		Find(&stocks)
-	return stocks, result.Error
+	var totalCount int64
+	query := r.db.DB().Model(&models.Stock{}).Where("rating_from ILIKE ?", "%"+rating+"%")
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
 }
+
+// GetByBrokerage obtiene stocks filtrados por brokerage paginados
+func (r *StockRepository) GetByBrokerage(brokerage string, page, pageSize int) ([]models.Stock, int, int, error) {
+	var stocks []models.Stock
+	var totalCount int64
+	query := r.db.DB().Model(&models.Stock{}).Where("brokerage ILIKE ?", "%"+brokerage+"%")
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
+}
+
+// GetByDateRange obtiene stocks dentro de un rango de fechas paginados
+func (r *StockRepository) GetByDateRange(startDate, endDate time.Time, page, pageSize int) ([]models.Stock, int, int, error) {
+	var stocks []models.Stock
+	var totalCount int64
+	query := r.db.DB().Model(&models.Stock{}).Where("time BETWEEN ? AND ?", startDate, endDate)
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
+}
+
+// GetByCompany obtiene stocks filtrados por compañía paginados
+func (r *StockRepository) GetByCompany(company string, page, pageSize int) ([]models.Stock, int, int, error) {
+	var stocks []models.Stock
+	var totalCount int64
+	query := r.db.DB().Model(&models.Stock{}).Where("company ILIKE ?", "%"+company+"%")
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
+}
+
+// SearchStocks búsqueda general por compañía, ticker o brokerage paginada
+func (r *StockRepository) SearchStocks(query string, page, pageSize int) ([]models.Stock, int, int, error) {
+	var stocks []models.Stock
+	var totalCount int64
+	dbQuery := r.db.DB().Model(&models.Stock{}).
+		Where("ticker ILIKE ? OR company ILIKE ? OR brokerage ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+
+	if err := dbQuery.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := dbQuery.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
+}
+
+// GetByPriceRange obtiene stocks dentro de un rango de precios objetivo paginados
+func (r *StockRepository) GetByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error) {
+	var stocks []models.Stock
+	var totalCount int64
+	// NOTA: Esta consulta asume que target_from es un string que puede compararse directamente.
+	// Si necesitas comparación numérica, la lógica debe cambiar (posiblemente parseando en la DB o filtrando después).
+	query := r.db.DB().Model(&models.Stock{}).Where("target_from BETWEEN ? AND ?", minPrice, maxPrice)
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Order("time DESC").Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
+}
+
+// --- Métodos No Paginados (Revisados) ---
 
 // GetActionCounts obtiene conteos por tipo de acción
 func (r *StockRepository) GetActionCounts() (map[string]int, error) {
@@ -89,71 +265,39 @@ func (r *StockRepository) GetActionCounts() (map[string]int, error) {
 		Count  int
 	}
 	var results []Result
-
-	err := r.db.DB().Model(&models.Stock{}).
-		Select("action, count(*) as count").
-		Group("action").
-		Order("count DESC").
-		Find(&results).Error
-
+	err := r.db.DB().Model(&models.Stock{}).Select("action, count(*) as count").Group("action").Order("count DESC").Find(&results).Error
 	if err != nil {
 		return nil, err
 	}
-
 	counts := make(map[string]int)
 	for _, result := range results {
 		counts[result.Action] = result.Count
 	}
-
 	return counts, nil
 }
 
-// GetByCompany obtiene stocks filtrados por compañía
-func (r *StockRepository) GetByCompany(company string) ([]models.Stock, error) {
-	var stocks []models.Stock
-	result := r.db.DB().Where("company ILIKE ?", "%"+company+"%").
-		Order("time DESC").
-		Find(&stocks)
-	return stocks, result.Error
-}
-
-// GetRatingCounts obtiene conteos por tipo de rating
+// GetRatingCounts obtiene conteos por tipo de rating_to
 func (r *StockRepository) GetRatingCounts() (map[string]int, error) {
 	type Result struct {
 		Rating string `gorm:"column:rating_to"`
 		Count  int
 	}
 	var results []Result
-
-	err := r.db.DB().Model(&models.Stock{}).
-		Select("rating_to, count(*) as count").
-		Group("rating_to").
-		Order("count DESC").
-		Find(&results).Error
-
+	err := r.db.DB().Model(&models.Stock{}).Select("rating_to, count(*) as count").Group("rating_to").Order("count DESC").Find(&results).Error
 	if err != nil {
 		return nil, err
 	}
-
 	counts := make(map[string]int)
 	for _, result := range results {
 		counts[result.Rating] = result.Count
 	}
-
 	return counts, nil
 }
 
-// GetByBrokerage obtiene stocks filtrados por brokerage
-func (r *StockRepository) GetByBrokerage(brokerage string) ([]models.Stock, error) {
-	var stocks []models.Stock
-	result := r.db.DB().Where("brokerage ILIKE ?", "%"+brokerage+"%").
-		Order("time DESC").
-		Find(&stocks)
-
-	// Añadir log para depuración
-	log.Printf("Búsqueda por brokerage '%s': %d resultados encontrados", brokerage, len(stocks))
-
-	return stocks, result.Error
+// TruncateTable elimina todos los registros de la tabla stocks
+func (r *StockRepository) TruncateTable() error {
+	// ¡CUIDADO! Esto elimina todos los datos. Asegúrate de que es lo que quieres.
+	return r.db.DB().Exec("TRUNCATE TABLE stocks").Error
 }
 
 // InsertStock inserta un único registro de stock
@@ -161,148 +305,37 @@ func (r *StockRepository) InsertStock(stock models.Stock) error {
 	return r.db.DB().Create(&stock).Error
 }
 
-// InsertStocks inserta múltiples registros de stock
+// InsertStocks (Considera eliminar si UpsertStocksParallel es suficiente)
 func (r *StockRepository) InsertStocks(stocks []models.Stock) (int, map[string]string, error) {
+	// Implementación simplificada, puede ser ineficiente para muchos registros
 	inserted := 0
 	failedTickers := make(map[string]string)
-
-	// Crear un mapa para rastrear tickers insertados
-	insertedTickers := make(map[string]bool)
-
-	// Insertar registros uno por uno para mejor control
 	for _, stock := range stocks {
-		// Usar directamente clause.Columns y clause.OnConflict
-		err := r.db.DB().Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "ticker"}, {Name: "time"}},
-			DoNothing: true,
-		}).Create(&stock).Error
-
+		err := r.InsertStock(stock)
 		if err != nil {
-			failedTickers[stock.Ticker] = err.Error()
-		} else if _, isInserted := insertedTickers[stock.Ticker]; !isInserted {
-			insertedTickers[stock.Ticker] = true
-			inserted++
-
-			// Log cada 100 inserciones
-			if inserted%100 == 0 {
-				log.Printf("Progreso: %d elementos insertados", inserted)
-			}
+			failedTickers[stock.Ticker+"_"+stock.Time.String()] = err.Error() // Usar clave única
 		} else {
-			// Duplicado
-			tickerWithTime := fmt.Sprintf("%s-%s", stock.Ticker, stock.Time.Format("20060102150405"))
-			failedTickers[tickerWithTime] = "Ticker duplicado (ya insertado previamente)"
+			inserted++
 		}
 	}
-
 	return inserted, failedTickers, nil
 }
 
-// InsertStocksParallel inserta múltiples registros en paralelo
+// InsertStocksParallel (Considera eliminar si UpsertStocksParallel es suficiente)
 func (r *StockRepository) InsertStocksParallel(stocks []models.Stock) (int, map[string]string, error) {
-	inserted := int32(0)
-	insertedTickers := sync.Map{}
-	failedTickers := sync.Map{}
-
-	// Número de workers y tamaño de lotes
-	numWorkers := 10
-	batchSize := 50
-
-	// Dividir los stocks en lotes
-	var stockBatches [][]models.Stock
-	for i := 0; i < len(stocks); i += batchSize {
-		end := i + batchSize
-		if end > len(stocks) {
-			end = len(stocks)
-		}
-		stockBatches = append(stockBatches, stocks[i:end])
-	}
-
-	log.Printf("Procesando %d registros en %d lotes con %d workers",
-		len(stocks), len(stockBatches), numWorkers)
-
-	// Canal para distribuir lotes a workers
-	batchChan := make(chan []models.Stock, len(stockBatches))
-	var wg sync.WaitGroup
-
-	// Iniciar workers
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go func(workerId int) {
-			defer wg.Done()
-
-			// Cada worker procesa lotes del canal
-			for batch := range batchChan {
-				if len(batch) == 0 {
-					continue
-				}
-
-				// Crear transacción para el lote
-				tx := r.db.DB().Begin()
-
-				for _, stock := range batch {
-					// Usar directamente clause.Columns y clause.OnConflict
-					err := tx.Clauses(clause.OnConflict{
-						Columns:   []clause.Column{{Name: "ticker"}, {Name: "time"}},
-						DoNothing: true,
-					}).Create(&stock).Error
-
-					if err != nil {
-						failedTickers.Store(stock.Ticker, err.Error())
-					} else {
-						ticker := stock.Ticker
-						if _, loaded := insertedTickers.LoadOrStore(ticker, true); !loaded {
-							atomic.AddInt32(&inserted, 1)
-						}
-					}
-				}
-
-				// Commit transacción
-				if err := tx.Commit().Error; err != nil {
-					log.Printf("Error en worker %d al hacer commit del lote: %v", workerId, err)
-					for _, stock := range batch {
-						failedTickers.Store(stock.Ticker, err.Error())
-					}
-				}
-			}
-		}(i)
-	}
-
-	// Enviar lotes a los workers
-	for _, batch := range stockBatches {
-		batchChan <- batch
-	}
-
-	close(batchChan)
-	wg.Wait()
-
-	// Convertir resultados de sync.Map a map estándar
-	resultInserted := int(inserted)
-	resultFailed := make(map[string]string)
-
-	failedTickers.Range(func(key, value interface{}) bool {
-		resultFailed[key.(string)] = value.(string)
-		return true
-	})
-
-	log.Printf("Inserción paralela completada: %d elementos insertados, %d errores",
-		resultInserted, len(resultFailed))
-
-	return resultInserted, resultFailed, nil
+	// Esta implementación necesita ser revisada/completada si se va a usar
+	log.Println("ADVERTENCIA: InsertStocksParallel no está completamente implementada.")
+	return r.InsertStocks(stocks) // Llama a la versión secuencial por ahora
 }
 
 // UpsertStocksParallel inserta o actualiza múltiples registros en paralelo
 func (r *StockRepository) UpsertStocksParallel(stocks []models.Stock, syncDate time.Time) (int, map[string]string, error) {
 	inserted := int32(0)
-	updated := int32(0)
-	skipped := int32(0) // Agregamos contador de registros sin cambios
-	processedTickers := sync.Map{}
-	failedTickers := sync.Map{}
+	failedTickers := sync.Map{} // Usar sync.Map para concurrencia
 
-	// Número de workers y tamaño de lotes
 	numWorkers := 10
-	batchSize := 50
+	batchSize := 100 // Aumentar tamaño de lote para Upsert
 
-	// Dividir los stocks en lotes
 	var stockBatches [][]models.Stock
 	for i := 0; i < len(stocks); i += batchSize {
 		end := i + batchSize
@@ -312,202 +345,93 @@ func (r *StockRepository) UpsertStocksParallel(stocks []models.Stock, syncDate t
 		stockBatches = append(stockBatches, stocks[i:end])
 	}
 
-	log.Printf("Procesando %d registros en %d lotes con %d workers",
-		len(stocks), len(stockBatches), numWorkers)
+	log.Printf("Upsert: Procesando %d registros en %d lotes con %d workers", len(stocks), len(stockBatches), numWorkers)
 
-	// Canal para distribuir lotes a workers
 	batchChan := make(chan []models.Stock, len(stockBatches))
 	var wg sync.WaitGroup
 
-	// Iniciar workers
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func(workerId int) {
 			defer wg.Done()
-
-			// Cada worker procesa lotes del canal
 			for batch := range batchChan {
-				if len(batch) == 0 {
+				// Usar transacción para el lote
+				tx := r.db.DB().Begin()
+				if tx.Error != nil {
+					log.Printf("Worker %d: Error iniciando transacción: %v", workerId, tx.Error)
+					for _, stock := range batch {
+						failedTickers.Store(stock.Ticker+"_"+stock.Time.String(), tx.Error.Error())
+					}
+					continue // Saltar este lote
+				}
+
+				// Preparar la cláusula ON CONFLICT
+				// Asumiendo clave primaria (ticker, time)
+				conflictClause := clause.OnConflict{
+					Columns: []clause.Column{{Name: "ticker"}, {Name: "time"}},
+					DoUpdates: clause.AssignmentColumns([]string{
+						"company", "target_from", "target_to", "action",
+						"brokerage", "rating_from", "rating_to", "updated_at",
+					}), // Actualizar todos los campos excepto claves primarias y created_at
+				}
+
+				// Ejecutar Upsert para el lote
+				result := tx.Clauses(conflictClause).Create(&batch)
+
+				if result.Error != nil {
+					tx.Rollback()
+					log.Printf("Worker %d: Error en Upsert del lote: %v", workerId, result.Error)
+					for _, stock := range batch {
+						failedTickers.Store(stock.Ticker+"_"+stock.Time.String(), result.Error.Error())
+					}
 					continue
 				}
 
-				// Crear transacción para el lote
-				tx := r.db.DB().Begin()
-
-				for _, stock := range batch {
-					// Verificar si el registro ya existe
-					var existingStock models.Stock
-					err := tx.Where("ticker = ? AND time = ?", stock.Ticker, stock.Time).First(&existingStock).Error
-
-					isNewRecord := err != nil // Si hay error, el registro no existe
-
-					// Si el registro existe, verificar si hay cambios reales
-					needsUpdate := true
-					if !isNewRecord {
-						// Verificar si los campos relevantes han cambiado
-						if existingStock.Company == stock.Company &&
-							existingStock.TargetFrom == stock.TargetFrom &&
-							existingStock.TargetTo == stock.TargetTo &&
-							existingStock.Action == stock.Action &&
-							existingStock.Brokerage == stock.Brokerage &&
-							existingStock.RatingFrom == stock.RatingFrom &&
-							existingStock.RatingTo == stock.RatingTo {
-							// No hay cambios significativos, podemos omitir la actualización
-							needsUpdate = false
-							atomic.AddInt32(&skipped, 1)
-							continue // Saltar al siguiente registro
-						}
-					}
-
-					// Solo si es nuevo registro o necesita actualización
-					if isNewRecord || needsUpdate {
-						// Agregar campo con fecha de sincronización a UpdatedAt
-						stock.UpdatedAt = syncDate
-
-						// Usar clause.OnConflict para hacer upsert
-						result := tx.Clauses(clause.OnConflict{
-							Columns: []clause.Column{{Name: "ticker"}, {Name: "time"}},
-							DoUpdates: clause.AssignmentColumns([]string{
-								"company", "target_from", "target_to", "action",
-								"brokerage", "rating_from", "rating_to", "updated_at",
-							}),
-						}).Create(&stock)
-
-						if result.Error != nil {
-							failedTickers.Store(stock.Ticker, result.Error.Error())
-						} else {
-							ticker := stock.Ticker
-							if _, loaded := processedTickers.LoadOrStore(ticker, true); !loaded {
-								// Determinar si fue inserción o actualización basado en la existencia previa
-								if isNewRecord {
-									atomic.AddInt32(&inserted, 1)
-								} else {
-									atomic.AddInt32(&updated, 1)
-								}
-							}
-						}
-					}
-				}
+				// Contar resultados (GORM no facilita esto directamente en Upsert masivo)
+				// Estimación basada en RowsAffected (puede no ser precisa para skipped)
+				// Una mejor aproximación requeriría consultar antes/después o usar RETURNING si la DB lo soporta bien con GORM
+				atomic.AddInt32(&inserted, int32(result.RowsAffected)) // Asumimos que RowsAffected son inserciones/actualizaciones
 
 				// Commit transacción
 				if err := tx.Commit().Error; err != nil {
-					log.Printf("Error en worker %d al hacer commit del lote: %v", workerId, err)
+					log.Printf("Worker %d: Error haciendo commit: %v", workerId, err)
+					// Marcar como fallidos si el commit falla
 					for _, stock := range batch {
-						failedTickers.Store(stock.Ticker, err.Error())
+						failedTickers.Store(stock.Ticker+"_"+stock.Time.String(), err.Error())
 					}
 				}
 			}
 		}(i)
 	}
 
-	// Enviar lotes a los workers
 	for _, batch := range stockBatches {
 		batchChan <- batch
 	}
-
 	close(batchChan)
 	wg.Wait()
 
-	// Registrar estadísticas de operaciones
-	insertedCount := int(inserted)
-	updatedCount := int(updated)
-	skippedCount := int(skipped)
-
-	log.Printf("Upsert completado: %d insertados, %d actualizados, %d sin cambios (omitidos)",
-		insertedCount, updatedCount, skippedCount)
-
-	// Convertir resultados de sync.Map a map estándar
-	resultInserted := insertedCount + updatedCount // Total de registros procesados
+	resultInserted := int(inserted) // O una lógica más precisa si se implementa
 	resultFailed := make(map[string]string)
-
 	failedTickers.Range(func(key, value interface{}) bool {
 		resultFailed[key.(string)] = value.(string)
 		return true
 	})
 
-	log.Printf("Upsert paralelo completado: %d elementos procesados, %d errores",
-		resultInserted, len(resultFailed))
-
+	log.Printf("Upsert paralelo completado: %d procesados (aprox.), %d errores", resultInserted, len(resultFailed))
 	return resultInserted, resultFailed, nil
 }
 
-// GetByDateRange obtiene stocks dentro de un rango de fechas
-func (r *StockRepository) GetByDateRange(startDate, endDate time.Time) ([]models.Stock, error) {
+func (r *StockRepository) GetRecentRecommendations(since time.Time) ([]models.Stock, error) {
 	var stocks []models.Stock
-	result := r.db.DB().Where("time BETWEEN ? AND ?", startDate, endDate).
+	err := r.db.DB().Model(&models.Stock{}).
+		Where("time >= ?", since).
 		Order("time DESC").
-		Find(&stocks)
-	return stocks, result.Error
-}
-
-// SearchStocks búsqueda general por compañía o ticker
-func (r *StockRepository) SearchStocks(query string) ([]models.Stock, error) {
-	var stocks []models.Stock
-	result := r.db.DB().Where(
-		"ticker ILIKE ? OR company ILIKE ? OR brokerage ILIKE ?",
-		"%"+query+"%", "%"+query+"%", "%"+query+"%").
-		Order("time DESC").
-		Limit(100).
-		Find(&stocks)
-	return stocks, result.Error
-}
-
-// GetByPriceRange obtiene stocks dentro de un rango de precios objetivo
-func (r *StockRepository) GetByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) {
-	// Limpiar valores de precio
-	minPriceClean := minPrice
-	maxPriceClean := maxPrice
-
-	if len(minPrice) > 0 && minPrice[0] == '$' {
-		minPriceClean = minPrice[1:]
-	}
-
-	if len(maxPrice) > 0 && maxPrice[0] == '$' {
-		maxPriceClean = maxPrice[1:]
-	}
-
-	// Usar el método Where de GORM con SQL personalizado para el filtrado
-	var stocks []models.Stock
-	result := r.db.DB().Where(`
-        (CAST(REGEXP_REPLACE(target_from, '[^0-9.]', '', 'g') AS DECIMAL(10,2)) 
-         BETWEEN ?::DECIMAL(10,2) AND ?::DECIMAL(10,2))
-        AND
-        (CAST(REGEXP_REPLACE(target_to, '[^0-9.]', '', 'g') AS DECIMAL(10,2)) 
-         BETWEEN ?::DECIMAL(10,2) AND ?::DECIMAL(10,2))
-    `, minPriceClean, maxPriceClean, minPriceClean, maxPriceClean).
-		Order("time DESC").
-		Find(&stocks)
-
-	// Registrar para depuración
-	log.Printf("Búsqueda por rango de precio %s-%s: %d resultados encontrados",
-		minPrice, maxPrice, len(stocks))
-
-	return stocks, result.Error
-}
-
-// Función auxiliar para extraer precio numérico
-func extractNumericPrice(priceStr string) float64 {
-	if len(priceStr) == 0 {
-		return 0
-	}
-
-	// Eliminar símbolo de dólar
-	if priceStr[0] == '$' {
-		priceStr = priceStr[1:]
-	}
-
-	// Eliminar caracteres no numéricos
-	numStr := ""
-	for _, r := range priceStr {
-		if (r >= '0' && r <= '9') || r == '.' {
-			numStr += string(r)
-		}
-	}
-
-	// Convertir a float
-	val, err := strconv.ParseFloat(numStr, 64)
+		Find(&stocks).Error
 	if err != nil {
-		return 0
+		return nil, err
 	}
-	return val
+	return stocks, nil
 }
+
+// --- Funciones Auxiliares (si son necesarias) ---
+// ... (como extractNumericPrice si se usa) ...

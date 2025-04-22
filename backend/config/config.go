@@ -72,9 +72,10 @@ func GetConfig() *Config {
 		if config.Server.Host == "" {
 			config.Server.Host = "0.0.0.0" // Por defecto escucha en todas las interfaces
 		}
+		// Asegúrate de que el puerto no tenga prefijos como "http://"
 		config.Server.Port = os.Getenv("PORT")
 		if config.Server.Port == "" {
-			config.Server.Port = "8080"
+			config.Server.Port = "8080" // Valor predeterminado
 		}
 		config.Server.ReadTimeout = getEnvAsDuration("SERVER_READ_TIMEOUT", 10*time.Second)
 		config.Server.WriteTimeout = getEnvAsDuration("SERVER_WRITE_TIMEOUT", 30*time.Second)

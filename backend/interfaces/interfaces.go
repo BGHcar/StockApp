@@ -36,44 +36,53 @@ type StockItem struct {
 	Time       time.Time
 }
 
-// Repository define la interfaz para el acceso a datos
+// StockRepository define la interfaz para el acceso a datos
 type StockRepository interface {
-	GetAll() ([]models.Stock, error)
-	GetCount() (int64, error)
+	// --- Métodos Paginados ---
+	GetAll(page, pageSize int) ([]models.Stock, int, int, error) // Devuelve: items, totalItems, totalPages, error
+	GetByTicker(ticker string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetByAction(action string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetByRatingTo(rating string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetByRatingFrom(rating string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetByBrokerage(brokerage string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetByDateRange(startDate, endDate time.Time, page, pageSize int) ([]models.Stock, int, int, error)
+	GetByCompany(company string, page, pageSize int) ([]models.Stock, int, int, error)
+	SearchStocks(query string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error)
+
+	// --- Método para Recomendaciones ---
+	GetRecentRecommendations(since time.Time) ([]models.Stock, error) // Fetch recent stock data
+
+	// --- Otros Métodos ---
+	GetCount() (int, error) // Devuelve int
 	UpsertStocksParallel(stocks []models.Stock, syncDate time.Time) (int, map[string]string, error)
-	GetByTicker(ticker string) ([]models.Stock, error) 
-	GetByAction(action string) ([]models.Stock, error)
-	GetByRatingTo(rating string) ([]models.Stock, error)
-	GetByRatingFrom(rating string) ([]models.Stock, error)
-	GetByBrokerage(brokerage string) ([]models.Stock, error)
-	GetByDateRange(startDate, endDate time.Time) ([]models.Stock, error)
-	GetByCompany(company string) ([]models.Stock, error)
 	GetActionCounts() (map[string]int, error)
 	GetRatingCounts() (map[string]int, error)
-	InsertStock(stock models.Stock) error
+	InsertStock(stock models.Stock) error // (Considera si estos métodos Insert* son necesarios si ya tienes Upsert)
 	InsertStocks(stocks []models.Stock) (int, map[string]string, error)
 	InsertStocksParallel(stocks []models.Stock) (int, map[string]string, error)
 	TruncateTable() error
-	SearchStocks(query string) ([]models.Stock, error)
-	GetByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) // Nueva función
 }
 
-// Service define la interfaz para la lógica de negocio
+// StockService define la interfaz para la lógica de negocio
 type StockService interface {
-	GetAllStocks() ([]models.Stock, error)
+	GetAllStocks(page, pageSize int) ([]models.Stock, int, int, error) // Devuelve: items, totalItems, totalPages, error
 	GetTotalCount() (int, error)
-	GetStockByTicker(ticker string) ([]models.Stock, error)
-	GetStocksByAction(action string) ([]models.Stock, error)
-	GetStocksByRatingTo(rating string) ([]models.Stock, error)
-	GetStocksByRatingFrom(rating string) ([]models.Stock, error)
-	GetStocksByCompany(company string) ([]models.Stock, error)
+	GetStockByTicker(ticker string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetStocksByAction(action string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetStocksByRatingTo(rating string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetStocksByRatingFrom(rating string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetStocksByCompany(company string, page, pageSize int) ([]models.Stock, int, int, error)
 	GetActionStats() (map[string]int, error)
 	GetRatingStats() (map[string]int, error)
 	SyncStockData() (SyncResult, error)
-	SearchStocks(query string) ([]models.Stock, error)
-	GetStocksByBrokerage(brokerage string) ([]models.Stock, error)
-	GetStocksByDateRange(startDate, endDate time.Time) ([]models.Stock, error)
-	GetStocksByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) // Nueva función
+	SearchStocks(query string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetStocksByBrokerage(brokerage string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetStocksByDateRange(startDate, endDate time.Time, page, pageSize int) ([]models.Stock, int, int, error)
+	GetStocksByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error)
+
+	// --- Método para Recomendaciones ---
+	RecommendStocks(limit int) ([]models.Recommendation, error) // Generate recommendations
 }
 
 // SyncResult define el resultado de un proceso de sincronización

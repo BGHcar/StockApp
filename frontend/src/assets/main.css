@@ -1,46 +1,8 @@
 @import './base.css';
 
-/* Fondo con el color más oscuro del gradiente */
-body {
-  font-family: 'Inter', sans-serif;
 
-  background: #ADA996;  /* Color más oscuro del gradiente original */
-  
-  color: #f3f4f6;
-  margin: 0;
-  min-height: 100vh;
-  width: 100vw;
+body {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-}
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  max-width: 100%;
-  overflow-y: auto !important; /* Permitir scroll vertical en toda la página */
-}
-.container {
-  width: 100vw;
-  max-width: 1800px;
-  padding: 10px 20px;
-  backdrop-filter: blur(3px);
-}
-.title {
-  font-size: 1.2rem !important;
-  text-align: center;
-  margin: 0.5rem 0 !important;
-  color: #fff;
-  padding: 0.25rem;
-  border: 2px solid #646464;
-  border-radius: 8px;
-  max-width: 100% !important; /* Evitar desbordamiento */
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  letter-spacing: 0.05em;
+  background-color: #937666;
 }

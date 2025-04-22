@@ -36,6 +36,47 @@
   --border-color: rgba(173, 169, 150, 0.3);
   --shadow-color: rgba(100, 100, 100, 0.2);
   --shadow-color-darker: rgba(100, 100, 100, 0.4);
+
+  /* Colores principales */
+  /* #f5eef8
+245, 238, 248
+#ebdef0
+235, 222, 240
+#d7bde2
+215, 189, 226
+#c39bd3
+195, 155, 211
+#af7ac5
+175, 122, 197
+#9b59b6
+155, 89, 182
+#884ea0
+136, 78, 160
+#76448a
+118, 68, 138
+#633974
+99, 57, 116
+#512e5f */
+  --color-primary: #ebedef;
+  --color-primary-light: #d6dbdf;
+  --color-primary-dark: #aeb6bf;
+  --color-primary-darker: #85929e;
+  --color-primary-darkest: #5d6d7e;
+  --color-primary-soft: #34495e;
+  --color-primary-softest: #2e4053;
+  --color-primary-muted: #283747;
+  --color-primary-muted-light: #212f3c;
+  --color-primary-muted-dark: #1b2631;
+
+  /* Colores de estado */
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+  --color-neutral: #64748B;
+
+  /* Gradientes */
+  --gradient-primary: linear-gradient(to bottom right, #1E293B, #2563EB);
+  --gradient-secondary: linear-gradient(to bottom right, #2563EB, #3B82F6);
 }
 
 /* semantic color variables for this project */
@@ -76,26 +117,15 @@
 }
 
 body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
   min-height: 100vh;
-  color: var(--color-text);
-  background: var(--color-background);
+  display: flex;
+  flex-direction: column;
   transition:
     color 0.5s,
     background-color 0.5s;
   line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
   font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

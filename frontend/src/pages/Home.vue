@@ -1,12 +1,15 @@
 <template>
   <div class="container">
-    <h1 class="title font-bold text-2xl text-white text-center mb-2">
-      <span class="text-[#ef4444]">STOCKS </span>
-      <span class="text-[#60a5fa]">SEARCH </span>
-      <span class="text-white">APP</span> <!-- Cambiado de verde a blanco -->
-    </h1>
+    <div class="title">
+      <h1 class="title-text font-bold text-2xl text-white text-center">
+        <span class="text-[#ef4444]">STOCKS </span>
+        <span class="text-[#60a5fa]">SEARCH </span>
+        <span class="text-white">APP</span> <!-- Cambiado de verde a blanco -->
+      </h1>
+    </div>
 
     <div class="content">
+      <!-- Escuchar eventos y llamar acciones del store -->
       <StockSearch @search="handleSearch" @reset="handleReset" class="search-container" />
 
       <div v-if="stockStore.loading" class="status-message">
@@ -16,14 +19,11 @@
         {{ stockStore.error }}
       </div>
       <div v-else class="components-wrapper">
-        <StockTable v-if="stockStore.stocks.length > 0" :stocks="stockStore.stocks" :headers="tableHeaders"
-          class="table-container" />
-        <div v-else class="no-results">
-          No se encontraron resultados
-        </div>
-        <StockRecommendations v-if="stockStore.stocks.length > 0" :stocks="stockStore.stocks"
-          class="recommendations-container" />
+        <!-- Pasar los stocks de la página actual a StockTable -->
+        <StockTable :stocks="stockStore.stocks" :headers="tableHeaders" class="table-container" />
+        <!-- StockRecommendations ahora obtiene datos de su propio store -->
       </div>
+      <StockRecommendations class="recommendations-container" />
     </div>
   </div>
 </template>
@@ -33,8 +33,7 @@ import { onMounted } from 'vue'
 import { useStockStore } from '@/stores/stockStore'
 import StockTable from '@/components/StockTable.vue'
 import StockSearch from '@/components/StockSearch.vue'
-import { searchStocks } from '@/services/stockService'
-import StockRecommendations from '@/components/StockRecommendations.vue'
+import StockRecommendations from '@/components/StockRecommendations.vue' // Asegúrate que la ruta sea correcta
 import type { TableHeader } from '@/types/table'
 
 const stockStore = useStockStore()
@@ -48,137 +47,97 @@ const tableHeaders: TableHeader[] = [
   { key: 'rating_to', label: 'Rating Act.', class: 'w-[10%]' },
   { key: 'target_from', label: 'Precio Desde', class: 'w-[10%]' },
   { key: 'target_to', label: 'Precio Hasta', class: 'w-[10%]' },
-  /* { key: 'time', label : 'Fecha', class: 'w-[10%]' },   */
+  // { key: 'time', label : 'Fecha', class: 'w-[10%]' }, // Descomentar si quieres mostrarla
 ]
 
 onMounted(() => {
-  stockStore.loadStocks()
+  // Cargar la primera página al montar
+  stockStore.loadStocks(1, stockStore.pagination.pageSize);
+  // No necesitas cargar recomendaciones aquí, el componente lo hace
 })
 
+// Llamar a la acción de búsqueda del store
 async function handleSearch(type: string, query: string) {
-  stockStore.loading = true
-  stockStore.error = null
-  try {
-    const results = await searchStocks(type, query)
-    stockStore.stocks = results
-  } catch (e: any) {
-    stockStore.error = e.message
-    stockStore.stocks = []
-  } finally {
-    stockStore.loading = false
-  }
+  await stockStore.searchStocks(type, query); // El store maneja el loading y error
 }
 
+// Llamar a la acción de reseteo del store
 function handleReset() {
-  stockStore.loadStocks()
+  stockStore.resetStocks();
 }
 </script>
 
 <style scoped>
-.title {
-  
-  font-size: 1.75rem;
-  /* Reducido aún más */
-  font-weight: 900;
-  /* Aumentar a 900 para una negrita más fuerte */
-  /* Cambiar color a blanco por defecto */
-  color: white;
-  text-align: center;
-  margin: 0 0 0.25rem 0;
-  /* Eliminar margen superior */
-  flex: 0 0 auto;
-  /* No crecer */
-  
-  /* Añadir espaciado entre letras */
-  width: 100%;
-  /* Asegurar que ocupe todo el ancho disponible */
-  text-transform: uppercase;
-  /* Opcional: texto en mayúsculas */
-  /* Actualizar sombra para que complemente el nuevo tema */
-  
-}
 
-/* Específicamente para los spans dentro del título */
-.title span {
-  font-weight: 900;
-  /* Asegurar que los spans también están en negrita */
-  padding: 0 0.1em;
-  /* Añadir un poco de espacio horizontal */
+.container {
+  width: 100%;
+  max-width: 1366px;
+  margin: 0 auto;
+  background-color: #292f36;
+  border-radius: 8px;
 }
 
 .content {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  flex: 1;
-  overflow: hidden;
+  gap: 10px;
 }
 
-.search-container {
+.title {
   width: 100%;
+  padding: 20px;
+  text-align: center;
+  font: bold 2rem 'Arial', sans-serif;
+  color: #fff;
+}
+
+.title-text {
+  font-size: 2rem;
+  background-color: #937666;
   border-radius: 8px;
-  /* Cambiar del fondo morado al transparente */
-  background: transparent;
-  flex: 0 0 auto;
-  /* No crecer */
+  padding: 8px;
+  -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
 }
 
 .components-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  /* Aumentar ligeramente el espacio entre componentes */
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-  /* Limitar altura máxima */
-  height: 100%;
-  /* Asegurar que ocupe todo el espacio disponible */
+  width: 100%;
+}
+
+.search-container {
+  border-radius: 8px;
+  width: 100%;
+  background-color: #937666;
+  padding: 8px;
+  -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+}
+
+.table-container {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  height: 70vh;
+  width: 100%;
+  overflow: auto;
+  background-color: #937666;
+  -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
 }
 
 .recommendations-container {
-  width: 100%;
+  border: 1px solid;
   border-radius: 8px;
-  /* Cambiar del fondo morado al transparente */
-  background: transparent;
-  flex: 0 0 auto;
-  /* No crecer ni encoger, ajustarse al contenido */
-  max-height: none;
-  /* Quitar la restricción de altura máxima */
-  overflow: visible;
-  /* Sin scroll */
-  padding-bottom: 0;
-  /* Eliminar el padding-bottom adicional */
-}
-
-.status-message {
-  text-align: center;
-  padding: 0.5rem;
-  color: #333;
-  flex: 0 0 auto;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  margin: 1rem 0;
-  border: 2px solid #646464;
-  /* Borde más oscuro y consistente */
-}
-
-.error {
-  color: #d32f2f;
-  border: 2px solid #d32f2f;
-  /* Borde rojo para errores */
-}
-
-/* Estilo para mensaje de no resultados */
-.no-results {
-  text-align: center;
-  padding: 1rem;
-  color: #333;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  margin: 1rem 0;
-  border: 2px solid #646464;
-  /* Borde más oscuro y consistente */
+  background-color: #937666;
+  padding: 8px;
+  -webkit-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  -moz-box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
+  box-shadow: 2px 4px 16px 0px rgba(0, 0, 0, 0.75);
 }
 </style>

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings" // Import strings
 	"time"
 )
 
@@ -27,58 +28,108 @@ func NewStockService(repo interfaces.StockRepository, apiClient interfaces.APICl
 	}
 }
 
-// GetAllStocks obtiene todos los stocks
-func (s *StockService) GetAllStocks() ([]models.Stock, error) {
-	return s.repo.GetAll()
+// --- Helper para normalizar paginación ---
+func normalizePagination(page, pageSize int) (int, int) {
+	if page < 1 {
+		page = 1
+	}
+	// Definir límites por defecto y máximo
+	defaultPageSize := 20
+	maxPageSize := 100
+	if pageSize < 1 || pageSize > maxPageSize {
+		pageSize = defaultPageSize
+	}
+	return page, pageSize
+}
+
+// GetAllStocks obtiene todos los stocks paginados
+func (s *StockService) GetAllStocks(page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	// Llama al repositorio que ahora devuelve los 4 valores
+	stocks, totalItems, totalPages, err := s.repo.GetAll(page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err // Devuelve ceros para int
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
 // GetTotalCount obtiene el número total de stocks
 func (s *StockService) GetTotalCount() (int, error) {
-	count, err := s.repo.GetCount()
-	return int(count), err // Convertir de int64 a int
+	// El repositorio ya devuelve int
+	return s.repo.GetCount()
 }
 
-// GetStockByTicker obtiene un stock específico por su ticker
-func (s *StockService) GetStockByTicker(ticker string) ([]models.Stock, error) {
-	return s.repo.GetByTicker(ticker)
+// GetStockByTicker obtiene stocks por ticker con paginación
+func (s *StockService) GetStockByTicker(ticker string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	stocks, totalItems, totalPages, err := s.repo.GetByTicker(ticker, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
-// GetStocksByAction obtiene stocks filtrados por tipo de acción
-func (s *StockService) GetStocksByAction(action string) ([]models.Stock, error) {
-	return s.repo.GetByAction(action)
+// GetStocksByAction obtiene stocks por acción con paginación
+func (s *StockService) GetStocksByAction(action string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	stocks, totalItems, totalPages, err := s.repo.GetByAction(action, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
-// GetStocksByRating obtiene stocks filtrados por rating
-func (s *StockService) GetStocksByRatingTo(rating string) ([]models.Stock, error) {
-	return s.repo.GetByRatingTo(rating)
+// GetStocksByRatingTo obtiene stocks filtrados por rating_to paginados
+func (s *StockService) GetStocksByRatingTo(rating string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	stocks, totalItems, totalPages, err := s.repo.GetByRatingTo(rating, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
-func (s *StockService) GetStocksByRatingFrom(rating string) ([]models.Stock, error) {
-	return s.repo.GetByRatingFrom(rating)
+func (s *StockService) GetStocksByRatingFrom(rating string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
+	stocks, totalItems, totalPages, err := s.repo.GetByRatingFrom(rating, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
-func (s *StockService) GetStocksByBrokerage(brokerage string) ([]models.Stock, error) {
-	return s.repo.GetByBrokerage(brokerage)
+// GetStocksByBrokerage obtiene stocks por brokerage con paginación
+func (s *StockService) GetStocksByBrokerage(brokerage string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
+	stocks, totalItems, totalPages, err := s.repo.GetByBrokerage(brokerage, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
-// GetActionStats obtiene estadísticas por tipo de acción
-func (s *StockService) GetActionStats() (map[string]int, error) {
-	return s.repo.GetActionCounts()
+// GetStocksByDateRange obtiene stocks por rango de fechas paginados
+func (s *StockService) GetStocksByDateRange(startDate, endDate time.Time, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
+	stocks, totalItems, totalPages, err := s.repo.GetByDateRange(startDate, endDate, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
-// GetRatingStats obtiene estadísticas por tipo de rating
-func (s *StockService) GetRatingStats() (map[string]int, error) {
-	return s.repo.GetRatingCounts()
-}
-
-// GetStocksByDateRange obtiene stocks por rango de fechas
-func (s *StockService) GetStocksByDateRange(startDate, endDate time.Time) ([]models.Stock, error) {
-	return s.repo.GetByDateRange(startDate, endDate)
-}
-
-// GetStocksByCompany obtiene stocks filtrados por compañía
-func (s *StockService) GetStocksByCompany(company string) ([]models.Stock, error) {
-	return s.repo.GetByCompany(company)
+// GetStocksByCompany obtiene stocks por compañía con paginación
+func (s *StockService) GetStocksByCompany(company string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
+	stocks, totalItems, totalPages, err := s.repo.GetByCompany(company, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
 // SyncStockData sincroniza datos de stocks desde la API
@@ -312,11 +363,182 @@ func (s *StockService) logSyncSummary(result interfaces.SyncResult) {
 }
 
 // SearchStocks realiza una búsqueda general por ticker, compañía o brokerage
-func (s *StockService) SearchStocks(query string) ([]models.Stock, error) {
-	return s.repo.SearchStocks(query)
+func (s *StockService) SearchStocks(query string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	stocks, totalItems, totalPages, err := s.repo.SearchStocks(query, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
 }
 
-// GetStocksByPriceRange obtiene stocks por rango de precios objetivo
-func (s *StockService) GetStocksByPriceRange(minPrice, maxPrice string) ([]models.Stock, error) {
-	return s.repo.GetByPriceRange(minPrice, maxPrice)
+// GetStocksByPriceRange obtiene stocks por rango de precios paginados
+func (s *StockService) GetStocksByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
+	stocks, totalItems, totalPages, err := s.repo.GetByPriceRange(minPrice, maxPrice, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
+}
+
+// GetActionStats obtiene estadísticas por tipo de acción
+func (s *StockService) GetActionStats() (map[string]int, error) {
+	// Llama al método correspondiente del repositorio
+	return s.repo.GetActionCounts()
+}
+
+// GetRatingStats obtiene estadísticas por tipo de rating
+func (s *StockService) GetRatingStats() (map[string]int, error) {
+	// Llama al método correspondiente del repositorio
+	return s.repo.GetRatingCounts()
+}
+
+// --- Recommendation Logic ---
+
+// isPositiveRating checks if a rating string is generally positive.
+func isPositiveRating(rating string) bool {
+	ratingLower := strings.ToLower(rating)
+	positiveRatings := []string{"buy", "strong buy", "outperform", "overweight", "accumulate"}
+	for _, pr := range positiveRatings {
+		if strings.Contains(ratingLower, pr) {
+			return true
+		}
+	}
+	return false
+}
+
+// isNegativeRating checks if a rating string is generally negative.
+func isNegativeRating(rating string) bool {
+	ratingLower := strings.ToLower(rating)
+	negativeRatings := []string{"sell", "strong sell", "underperform", "underweight", "reduce"}
+	for _, nr := range negativeRatings {
+		if strings.Contains(ratingLower, nr) {
+			return true
+		}
+	}
+	return false
+}
+
+// isUpgrade checks if the rating change represents an upgrade.
+func isUpgrade(from, to string) bool {
+	// Simple logic: Upgrade if 'to' is positive and 'from' is not positive (or is negative/neutral)
+	return isPositiveRating(to) && !isPositiveRating(from)
+}
+
+// RecommendStocks generates stock recommendations based on recent data.
+func (s *StockService) RecommendStocks(limit int) ([]models.Recommendation, error) {
+	// 1. Define time window for recent data (e.g., last 7 days)
+	recommendationPeriod := 7 * 24 * time.Hour
+	since := time.Now().Add(-recommendationPeriod)
+
+	// 2. Fetch recent stock data from repository
+	recentStocks, err := s.repo.GetRecentRecommendations(since)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching recent data for recommendations: %w", err)
+	}
+
+	if len(recentStocks) == 0 {
+		log.Println("No recent stock data found for recommendations.")
+		return []models.Recommendation{}, nil // Return empty slice, not an error
+	}
+
+	// 3. Calculate scores for each ticker
+	scores := make(map[string]*models.Recommendation)
+	reasons := make(map[string][]string) // Store reasons per ticker
+
+	for _, stock := range recentStocks {
+		if stock.Ticker == "" {
+			continue // Skip entries without a ticker
+		}
+
+		currentScore := 0.0
+		reasonFragments := []string{}
+
+		// Score based on Action
+		if strings.EqualFold(stock.Action, "Buy") {
+			currentScore += 1.0
+			reasonFragments = append(reasonFragments, "Buy Action")
+		}
+
+		// Score based on Rating To
+		if isPositiveRating(stock.RatingTo) {
+			currentScore += 1.0
+			reasonFragments = append(reasonFragments, fmt.Sprintf("Positive Rating (%s)", stock.RatingTo))
+		}
+
+		// Score based on Upgrade
+		if isUpgrade(stock.RatingFrom, stock.RatingTo) {
+			currentScore += 0.5 // Bonus for upgrade
+			reasonFragments = append(reasonFragments, fmt.Sprintf("Upgrade (%s -> %s)", stock.RatingFrom, stock.RatingTo))
+		}
+
+		// --- Potential Enhancements (Optional) ---
+		// - Weight by brokerage reputation
+		// - Weight by recency (newer data gets higher score)
+		// - Factor in target price upside (requires current price data)
+		// -----------------------------------------
+
+		if currentScore > 0 {
+			ticker := stock.Ticker
+			if existing, ok := scores[ticker]; ok {
+				// Update existing score and latest timestamp
+				existing.Score += currentScore
+				if stock.Time.After(existing.LastUpdate) {
+					existing.LastUpdate = stock.Time
+					existing.Company = stock.Company // Update company name too
+				}
+				reasons[ticker] = append(reasons[ticker], reasonFragments...)
+			} else {
+				// Create new recommendation entry
+				scores[ticker] = &models.Recommendation{
+					Ticker:     ticker,
+					Company:    stock.Company,
+					Score:      currentScore,
+					LastUpdate: stock.Time,
+					// Reason will be built later
+				}
+				reasons[ticker] = reasonFragments
+			}
+		}
+	}
+
+	// 4. Convert map to slice and build reason string
+	recommendations := make([]models.Recommendation, 0, len(scores))
+	for ticker, rec := range scores {
+		// Build a concise reason string from unique fragments
+		uniqueReasons := make(map[string]bool)
+		for _, frag := range reasons[ticker] {
+			uniqueReasons[frag] = true
+		}
+		var reasonParts []string
+		for part := range uniqueReasons {
+			reasonParts = append(reasonParts, part)
+		}
+		sort.Strings(reasonParts) // Consistent order
+		rec.Reason = strings.Join(reasonParts, ", ")
+
+		recommendations = append(recommendations, *rec)
+	}
+
+	// 5. Sort recommendations by score (descending)
+	sort.Slice(recommendations, func(i, j int) bool {
+		if recommendations[i].Score != recommendations[j].Score {
+			return recommendations[i].Score > recommendations[j].Score
+		}
+		// Tie-breaker: more recent update first
+		return recommendations[i].LastUpdate.After(recommendations[j].LastUpdate)
+	})
+
+	// 6. Apply limit
+	if limit <= 0 {
+		limit = 5 // Default limit
+	}
+	if len(recommendations) > limit {
+		recommendations = recommendations[:limit]
+	}
+
+	log.Printf("Generated %d stock recommendations.", len(recommendations))
+	return recommendations, nil
 }

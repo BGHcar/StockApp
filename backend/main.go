@@ -8,6 +8,7 @@ import (
 	"backend/db"
 	"backend/routes"
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -70,17 +71,21 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
+	cfg.Server.Port = "8081"
+
 	// Crear el servidor HTTPS (puerto 443)
 	httpServer := &http.Server{
-		Addr:         "0.0.0.0:8081", // Puerto HTTPS estándar
+		Addr:         ":" + cfg.Server.Port, // Asegúrate de que solo sea el puerto
 		Handler:      router,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout:  120 * time.Second,
 	}
 
+	log.Printf("DEBUG - Puerto configurado: '%s'", cfg.Server.Port)
+
 	// Crear el servidor HTTP (puerto 80)
-/* 	httpServer := &http.Server{
+	/* 	httpServer := &http.Server{
 		Addr: "0.0.0.0:8082", // Puerto HTTP estándar
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Redirigir todo el tráfico HTTP a HTTPS
@@ -97,33 +102,33 @@ func main() {
 
 	// Goroutine para manejar el servidor HTTP (puerto 80)
 	go func() {
-		log.Printf("Iniciando servidor HTTP en puerto 8081 (redirección a HTTPS)...")
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Printf("Iniciando servidor HTTP en puerto %s...", cfg.Server.Port)
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Error iniciando servidor HTTP: %v", err)
 		}
 	}()
 
-/* 	// Goroutine para manejar el servidor HTTPS (puerto 443)
-	go func() {
-		log.Printf("Iniciando servidor HTTPS en puerto 443...")
+	/* 	// Goroutine para manejar el servidor HTTPS (puerto 443)
+	   	go func() {
+	   		log.Printf("Iniciando servidor HTTPS en puerto 443...")
 
-		// Para entorno de producción con certificados:
-		certFile := os.Getenv("CERT_FILE")
-		keyFile := os.Getenv("KEY_FILE")
+	   		// Para entorno de producción con certificados:
+	   		certFile := os.Getenv("CERT_FILE")
+	   		keyFile := os.Getenv("KEY_FILE")
 
-		var err error
-		if certFile != "" && keyFile != "" {
-			// Si hay certificados configurados, usar HTTPS
-			err = httpsServer.ListenAndServeTLS(certFile, keyFile)
-		} else {
-			// Si no hay certificados, usar HTTP en puerto 443
-			err = httpsServer.ListenAndServe()
-		}
+	   		var err error
+	   		if certFile != "" && keyFile != "" {
+	   			// Si hay certificados configurados, usar HTTPS
+	   			err = httpsServer.ListenAndServeTLS(certFile, keyFile)
+	   		} else {
+	   			// Si no hay certificados, usar HTTP en puerto 443
+	   			err = httpsServer.ListenAndServe()
+	   		}
 
-		if err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error iniciando servidor HTTPS: %v", err)
-		}
-	}() */
+	   		if err != nil && err != http.ErrServerClosed {
+	   			log.Fatalf("Error iniciando servidor HTTPS: %v", err)
+	   		}
+	   	}() */
 
 	// Goroutine para manejar señales de apagado
 	go func() {
@@ -140,7 +145,7 @@ func main() {
 		}
 
 		// Cerrar servidor HTTPS
-/* 		if err := httpsServer.Shutdown(shutdownCtx); err != nil {
+		/* 		if err := httpsServer.Shutdown(shutdownCtx); err != nil {
 			log.Printf("Error durante el apagado del servidor HTTPS: %v", err)
 		} */
 
