@@ -71,8 +71,6 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
-	cfg.Server.Port = "8081"
-
 	// Crear el servidor HTTPS (puerto 443)
 	httpServer := &http.Server{
 		Addr:         ":" + cfg.Server.Port, // Asegúrate de que solo sea el puerto
