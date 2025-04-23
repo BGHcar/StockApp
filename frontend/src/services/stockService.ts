@@ -15,7 +15,7 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// Función genérica para construir URLs con paginación
+// Función para construir URLs con paginación
 function buildUrlWithPagination(baseUrl: string, page: number, pageSize: number): string {
   const url = new URL(baseUrl);
   url.searchParams.append('page', page.toString());
@@ -38,7 +38,7 @@ export async function fetchStocks(page: number, pageSize: number): Promise<Pagin
   }
 }
 
-export async function searchStocks(type: string, query: string, page: number, pageSize: number): Promise<PaginatedResponse<Stock>> {
+export async function searchStocks(type: string, query: string, page: number, pageSize: number, activeSearchQuery?: string): Promise<PaginatedResponse<Stock>> {
   let baseUrl = '';
   try {
     switch (type) {
@@ -60,6 +60,28 @@ export async function searchStocks(type: string, query: string, page: number, pa
       case 'company':
         baseUrl = `${API_URL}/stocks/company/${encodeURIComponent(query)}`;
         break;
+      case 'sortBy':
+        // Para ordenamiento siempre usamos el endpoint /stocks/sorted/{field}
+        baseUrl = `${API_URL}/stocks/sorted/${encodeURIComponent(query)}`;
+        
+        // Si hay una búsqueda activa proporcionada, añadirla como parámetro query
+        if (activeSearchQuery && activeSearchQuery.trim() !== '') {
+          // Construir URL con el parámetro query primero, luego los parámetros de paginación
+          const url = new URL(baseUrl);
+          url.searchParams.append('query', activeSearchQuery);
+          url.searchParams.append('page', page.toString());
+          url.searchParams.append('pageSize', pageSize.toString());
+
+          console.log (url.toString())
+          
+          const response = await fetch(url.toString());
+          if (!response.ok) {
+            return { items: [], pagination: { page, pageSize, totalItems: 0, totalPages: 0 } };
+          }
+          
+          return await response.json();
+        }
+        break;
       case 'price':
         const [min, max] = query.split('-').map(Number);
         baseUrl = `${API_URL}/stocks/price-range/${min}/${max}`;
@@ -70,29 +92,21 @@ export async function searchStocks(type: string, query: string, page: number, pa
         break;
     }
 
+    // Para todos los demás casos, usar la URL base con paginación
     const url = buildUrlWithPagination(baseUrl, page, pageSize);
     const response = await fetch(url);
 
-    // Si no hay resultados (404 u otro error), devolver vacío
+    // Si no hay resultados, devolver vacío
     if (!response.ok) {
-      console.warn(`Búsqueda por ${type} (${query}) pag ${page} no devolvió resultados (status: ${response.status})`);
-      return { items: [], pagination: { page: page, pageSize: pageSize, totalItems: 0, totalPages: 0 } };
+      return { items: [], pagination: { page, pageSize, totalItems: 0, totalPages: 0 } };
     }
 
     const data: PaginatedResponse<Stock> = await response.json();
-
-    // Asegurarse de manejar null/undefined correctamente
-    if (!data || !data.items) {
-      console.warn(`Búsqueda por ${type} (${query}) pag ${page} devolvió datos nulos o sin items`);
-      return { items: [], pagination: { page: page, pageSize: pageSize, totalItems: 0, totalPages: 0 } };
-    }
-
-    console.log(`Búsqueda por ${type} (${query}) pag ${page} encontró ${data.items.length} resultados (Total: ${data.pagination.totalItems})`);
-    return data;
+    return data || { items: [], pagination: { page, pageSize, totalItems: 0, totalPages: 0 } };
 
   } catch (error) {
     console.error(`Error en búsqueda por ${type} (${query}) pag ${page}:`, error);
-    return { items: [], pagination: { page: page, pageSize: pageSize, totalItems: 0, totalPages: 0 } };
+    return { items: [], pagination: { page, pageSize, totalItems: 0, totalPages: 0 } };
   }
 }
 

@@ -4,30 +4,23 @@
       <table class="stock-table">
         <thead>
           <tr>
-            <th
-              v-for="header in headers"
-              :key="header.key"
-              :class="[header.class, 'sortable']"
-              @click="sort(header.key)"
-            >
+            <th v-for="header in headers" :key="header.key" :class="[header.class, 'sortable']"
+              @click="handleSort(header.key)">
               {{ header.label }}
-              <span class="sort-icon" v-if="sortKey === header.key">
-                {{ sortOrder === 'asc' ? '▲' : '▼' }}
+              <span class="sort-icon" v-if="currentSortField === header.key">
+                {{ currentSortIndicator }}
               </span>
             </th>
           </tr>
         </thead>
         <tbody>
           <!-- Mostrar mensaje si no hay stocks en la página actual -->
-          <tr v-if="sortedStocks.length === 0">
-             <td :colspan="headers.length" class="no-data-cell">No hay datos para mostrar en esta página.</td>
+          <tr v-if="props.stocks.length === 0">
+            <td :colspan="headers.length" class="no-data-cell">No hay datos para mostrar en esta página.</td>
           </tr>
           <!-- Renderizar filas de stocks -->
-          <tr v-for="stock in sortedStocks"
-              :key="stock.ticker + stock.time" v-else>
-            <td v-for="header in headers"
-                :key="header.key"
-                :class="header.class">
+          <tr v-for="stock in props.stocks" :key="stock.ticker + stock.time" v-else>
+            <td v-for="header in headers" :key="header.key" :class="header.class">
               {{ formatValue(stock, header.key) }}
             </td>
           </tr>
@@ -35,15 +28,17 @@
       </table>
       <div v-if="pagination.totalPages > 0" class="pagination-container">
         <div class="pagination-controls">
-          <button @click="goToPage(pagination.currentPage - 1)" :disabled="pagination.currentPage <= 1" class="pagination-button">
-                &lt; Anterior
-              </button>
-              <span class="pagination-info">
-                &nbsp Página {{ pagination.currentPage }} de {{ pagination.totalPages }} &nbsp
-              </span>
-              <button @click="goToPage(pagination.currentPage + 1)" :disabled="pagination.currentPage >= pagination.totalPages" class="pagination-button">
-                Siguiente &gt;
-              </button>
+          <button @click="goToPage(pagination.currentPage - 1)" :disabled="pagination.currentPage <= 1"
+            class="pagination-button">
+            &lt; Anterior
+          </button>
+          <span class="pagination-info">
+            &nbsp Página {{ pagination.currentPage }} de {{ pagination.totalPages }} &nbsp
+          </span>
+          <button @click="goToPage(pagination.currentPage + 1)"
+            :disabled="pagination.currentPage >= pagination.totalPages" class="pagination-button">
+            Siguiente &gt;
+          </button>
         </div>
       </div>
     </BaseScroll>
@@ -51,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref, computed } from 'vue'
+import { defineProps, computed } from 'vue'
 import type { Stock } from '@/types/stock'
 import type { TableHeader } from '@/types/table'
 import BaseTable from './base/BaseTable.vue'
@@ -66,9 +61,11 @@ const props = defineProps<{
 const stockStore = useStockStore() // Usar el store
 const pagination = computed(() => stockStore.pagination) // Acceder al estado de paginación
 
-// Estado para el ordenamiento (se aplica solo a la página actual)
-const sortKey = ref<keyof Stock | null>(null);
-const sortOrder = ref<'asc' | 'desc'>('asc');
+// Obtenemos el campo de ordenamiento actual del store
+const currentSortField = computed(() => stockStore.currentSortField);
+
+// Indicador visual de ordenamiento
+const currentSortIndicator = computed(() => '▼'); // Siempre mostramos triángulo hacia abajo ya que el backend maneja la dirección
 
 // Función para formatear valores (incluyendo fechas)
 function formatValue(stock: Stock, key: keyof Stock): string {
@@ -85,51 +82,23 @@ function formatValue(stock: Stock, key: keyof Stock): string {
   return String(value);
 }
 
-// Función para ordenar (solo ordena los datos de la página actual)
-function sort(key: keyof Stock) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+// Función para manejar el ordenamiento desde el backend
+async function handleSort(field: keyof Stock) {
+  // Llamamos a la acción del store para ordenar
+  // Pasamos el campo de ordenamiento y preservamos la búsqueda actual si existe
+  if (stockStore.currentSearchType !== 'sortBy' && stockStore.currentSearchType !== 'loadAll') {
+    // Si hay una búsqueda activa que no es de ordenamiento, enviar la consulta actual
+    await stockStore.loadSortedStocks(field as string, stockStore.currentSearchQuery);
   } else {
-    sortKey.value = key;
-    sortOrder.value = 'asc';
+    // Si no hay búsqueda o ya estamos en modo ordenamiento, solo enviar el campo
+    await stockStore.loadSortedStocks(field as string);
   }
 }
-
-// Ordenar los stocks de la página actual
-const sortedStocks = computed(() => {
-  if (!sortKey.value) return props.stocks; // Usar props.stocks
-
-  return [...props.stocks].sort((a, b) => { // Usar props.stocks
-    const aValue = a[sortKey.value as keyof Stock];
-    const bValue = b[sortKey.value as keyof Stock];
-
-    if (sortKey.value === 'time') {
-      return sortOrder.value === 'asc'
-        ? new Date(aValue as string).getTime() - new Date(bValue as string).getTime()
-        : new Date(bValue as string).getTime() - new Date(aValue as string).getTime();
-    }
-
-    if (sortKey.value === 'target_from' || sortKey.value === 'target_to') {
-      const numA = parseFloat(String(aValue).replace(/[^\d.-]/g, ''));
-      const numB = parseFloat(String(bValue).replace(/[^\d.-]/g, ''));
-      // Manejar NaN
-      if (isNaN(numA) && isNaN(numB)) return 0;
-      if (isNaN(numA)) return sortOrder.value === 'asc' ? 1 : -1;
-      if (isNaN(numB)) return sortOrder.value === 'asc' ? -1 : 1;
-      return sortOrder.value === 'asc' ? numA - numB : numB - numA;
-    }
-
-    return sortOrder.value === 'asc'
-      ? String(aValue).localeCompare(String(bValue))
-      : String(bValue).localeCompare(String(aValue));
-  });
-});
 
 // Función para llamar a la acción del store para cambiar de página
 function goToPage(page: number) {
   stockStore.goToPage(page);
 }
-
 </script>
 
 <style scoped>
@@ -137,24 +106,31 @@ function goToPage(page: number) {
   width: 100%;
   min-width: 800px;
   table-layout: fixed;
-  border-collapse: separate; /* Cambiado de collapse a separate para mejor control de bordes */
-  border-spacing: 0; /* Eliminar espacios entre celdas */
-  background: transparent; /* Cambiado para que use el gradiente del contenedor */
+  border-collapse: separate;
+  /* Cambiado de collapse a separate para mejor control de bordes */
+  border-spacing: 0;
+  /* Eliminar espacios entre celdas */
+  background: transparent;
+  /* Cambiado para que use el gradiente del contenedor */
 }
 
 
-.no-data-cell{
+.no-data-cell {
   text-align: center;
   padding: 1rem;
   font-size: 1.2rem;
-  color: #646464; /* Color de texto acorde al tema */
-  background: rgba(255, 255, 255, 0.5); 
+  color: #646464;
+  /* Color de texto acorde al tema */
+  background: rgba(255, 255, 255, 0.5);
 }
+
 /* Definimos anchos específicos para cada columna */
-th, td {
+th,
+td {
   padding: 0.35rem 0.5rem;
   text-align: left;
-  border: 1px solid rgba(173, 169, 150, 0.3); /* Color de borde que complementa el gradiente */
+  border: 1px solid rgba(173, 169, 150, 0.3);
+  /* Color de borde que complementa el gradiente */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -164,21 +140,26 @@ th, td {
 th {
   position: sticky;
   top: 0;
-  background: #646464; /* Color sólido más oscuro que armoniza con el gradiente */
+  background: #646464;
+  /* Color sólido más oscuro que armoniza con el gradiente */
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 700;
   color: white;
   text-transform: uppercase;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   border: 1px solid #4a4a4a;
-  border-bottom: 2px solid #4a4a4a; /* Borde inferior más visible */
+  border-bottom: 2px solid #4a4a4a;
+  /* Borde inferior más visible */
   z-index: 10;
-  box-shadow: 0 2px 4px rgba(173, 169, 150, 0.4); /* Sombra acorde al fondo */
+  box-shadow: 0 2px 4px rgba(173, 169, 150, 0.4);
+  /* Sombra acorde al fondo */
 }
 
 /* Específicamente para la columna Rating Act. y Precio Desde */
-th:nth-child(6), th:nth-child(7) {
-  border-right: 2px solid #4a4a4a !important; /* Línea más gruesa y visible */
+th:nth-child(6),
+th:nth-child(7) {
+  border-right: 2px solid #4a4a4a !important;
+  /* Línea más gruesa y visible */
 }
 
 .sortable {
@@ -193,13 +174,17 @@ th:nth-child(6), th:nth-child(7) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #8a8a8a; /* Un tono más claro cuando se hace hover */
-  z-index: -1; /* Coloca detrás del texto pero delante de cualquier contenido inferior */
-  pointer-events: none; /* Para que no interfiera con los eventos del mouse */
+  background: #8a8a8a;
+  /* Un tono más claro cuando se hace hover */
+  z-index: -1;
+  /* Coloca detrás del texto pero delante de cualquier contenido inferior */
+  pointer-events: none;
+  /* Para que no interfiera con los eventos del mouse */
 }
 
 .sort-icon {
-  position: relative; /* Asegura que esté encima del fondo */
+  position: relative;
+  /* Asegura que esté encima del fondo */
   z-index: 1;
   margin-left: 4px;
   font-size: 0.7em;
@@ -207,16 +192,22 @@ th:nth-child(6), th:nth-child(7) {
 
 
 td {
-  background: rgba(255, 255, 255, 0.7); /* Fondo claro semi-transparente */
-  color: #333; /* Texto oscuro para contraste */
-  border: 1px solid rgba(173, 169, 150, 0.3); /* Borde más acorde al tema */
+  background: rgba(255, 255, 255, 0.7);
+  /* Fondo claro semi-transparente */
+  color: #333;
+  /* Texto oscuro para contraste */
+  border: 1px solid rgba(173, 169, 150, 0.3);
+  /* Borde más acorde al tema */
 }
 
 tr:hover td {
-  background: rgba(173, 169, 150, 0.2); /* Hover sutil acorde al fondo */
-  color: #000; /* Texto más oscuro en hover */
+  background: rgba(173, 169, 150, 0.2);
+  /* Hover sutil acorde al fondo */
+  color: #000;
+  /* Texto más oscuro en hover */
   transition: background-color 0.3s ease;
-  box-shadow: inset 0 0 5px rgba(173, 169, 150, 0.2); /* Sombra interna sutil */
+  box-shadow: inset 0 0 5px rgba(173, 169, 150, 0.2);
+  /* Sombra interna sutil */
 }
 
 .pagination-container {
@@ -247,10 +238,12 @@ tr:hover td {
   color: white;
   box-shadow: 0 1px 3px rgba(173, 169, 150, 0.3);
 }
+
 .pagination-button:hover {
-  background:#333;
+  background: #333;
   border: 1px solid #646464;
 }
+
 .pagination-button:focus {
   outline: none;
   border-color: #646464;

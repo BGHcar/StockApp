@@ -40,7 +40,8 @@ func SetupRoutes(r chi.Router) {
 	r.Get("/api/stocks/brokerage/{brokerage}", controller.GetStocksByBrokerage)
 	r.Get("/api/stocks/date-range", controller.GetStocksByDateRange) // Usar query params
 	r.Get("/api/stocks/price-range/{min}/{max}", controller.GetStocksByPriceRange)
-	r.Get("/api/stocks/search", controller.SearchStocks) // Usar query params
+	r.Get("/api/stocks/search", controller.SearchStocks)             // Usar query params
+	r.Get("/api/stocks/sorted/{sortBy}", controller.GetSortedStocks) // Nueva ruta para stocks ordenados por un campo específico
 
 	r.Get("/api/stats/actions", controller.GetActionStats)
 	r.Get("/api/stats/ratings", controller.GetRatingStats)
@@ -431,6 +432,54 @@ func (c *StockController) SearchStocks(w http.ResponseWriter, r *http.Request) {
 	response.Pagination.TotalPages = totalPages
 
 	respondJSON(w, http.StatusOK, response) // Devolver la estructura completa
+}
+
+func (c *StockController) GetSortedStocks(w http.ResponseWriter, r *http.Request) {
+	sortBy := chi.URLParam(r, "sortBy")  // Obtener el campo por el que ordenar
+	search := r.URL.Query().Get("query") // Obtener parámetro de búsqueda
+	page, pageSize := getPaginationParams(r)
+
+	if sortBy == "" {
+		respondError(w, http.StatusBadRequest, "sortBy parameter is required")
+		return
+	}
+
+	service, err := c.factory.CreateStockService()
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Error creating service: "+err.Error())
+		return
+	}
+
+	stocks, totalItems, totalPages, err := service.GetSortedStocks(sortBy, search, page, pageSize)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Error fetching sorted stocks: "+err.Error())
+		return
+	}
+
+	response := PaginatedResponse{Items: stocks}
+	response.Pagination.Page = page
+	response.Pagination.PageSize = pageSize
+	response.Pagination.TotalItems = totalItems
+	response.Pagination.TotalPages = totalPages
+
+	// Incluir metadatos de ordenamiento en la respuesta
+	metadata := map[string]interface{}{
+		"sortBy": sortBy,
+		"search": search,
+	}
+
+	// Añadimos los metadatos a la respuesta
+	type ResponseWithMetadata struct {
+		PaginatedResponse
+		Metadata map[string]interface{} `json:"metadata"`
+	}
+
+	finalResponse := ResponseWithMetadata{
+		PaginatedResponse: response,
+		Metadata:          metadata,
+	}
+
+	respondJSON(w, http.StatusOK, finalResponse)
 }
 
 // --- Handlers de Estadísticas (sin cambios necesarios para paginación) ---

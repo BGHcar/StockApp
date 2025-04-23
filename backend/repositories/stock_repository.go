@@ -429,6 +429,49 @@ func (r *StockRepository) UpsertStocksParallel(stocks []models.Stock, syncDate t
 	return resultInserted, resultFailed, nil
 }
 
+// GetSortedStocks obtiene stocks ordenados por un campo específico y dirección
+// El parámetro search permite filtrar los resultados por ticker, company o brokerage
+// independientemente del campo por el que se está ordenando
+func (r *StockRepository) GetSortedStocks(sortBy, sortOrder, search string, page, pageSize int) ([]models.Stock, int, int, error) {
+	var stocks []models.Stock
+	var totalCount int64
+	baseQuery := r.db.DB().Model(&models.Stock{})
+
+	// Si hay una búsqueda, aplicar filtro en múltiples campos
+	if search != "" {
+		baseQuery = baseQuery.Where("ticker ILIKE ? OR company ILIKE ? OR brokerage ILIKE ?",
+			"%"+search+"%", "%"+search+"%", "%"+search+"%")
+	}
+
+	// Contar total de items (con filtro de búsqueda si existe)
+	if err := baseQuery.Count(&totalCount).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	// Validar sortOrder, usar DESC por defecto si no es válido
+	if sortOrder != "ASC" && sortOrder != "DESC" {
+		sortOrder = "DESC"
+	}
+
+	// Calcular offset para paginación
+	offset := (page - 1) * pageSize
+
+	// Aplicar ordenamiento, límite y offset
+	result := baseQuery.
+		Order(sortBy + " " + sortOrder).
+		Limit(pageSize).
+		Offset(offset).
+		Find(&stocks)
+
+	if result.Error != nil {
+		return nil, 0, 0, result.Error
+	}
+
+	// Calcular número total de páginas
+	totalPages := calculateTotalPages(totalCount, pageSize)
+	return stocks, int(totalCount), totalPages, nil
+}
+
 func (r *StockRepository) GetRecentRecommendations(since time.Time) ([]models.Stock, error) {
 	var stocks []models.Stock
 	err := r.db.DB().Model(&models.Stock{}).
@@ -441,5 +484,3 @@ func (r *StockRepository) GetRecentRecommendations(since time.Time) ([]models.St
 	return stocks, nil
 }
 
-// --- Funciones Auxiliares (si son necesarias) ---
-// ... (como extractNumericPrice si se usa) ...

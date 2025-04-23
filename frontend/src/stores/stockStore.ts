@@ -19,6 +19,7 @@ interface StockState {
   // Mantener filtros si los usas para búsquedas
   currentSearchType: string;
   currentSearchQuery: string;
+  currentSortField: string | null; // Campo por el que se está ordenando actualmente
 }
 
 export const useStockStore = defineStore("stock", {
@@ -35,6 +36,7 @@ export const useStockStore = defineStore("stock", {
     },
     currentSearchType: 'general', // Guardar el tipo de búsqueda actual
     currentSearchQuery: '',      // Guardar la query actual
+    currentSortField: null,      // Guardar el campo de ordenamiento actual
   }),
 
   getters: {
@@ -110,16 +112,81 @@ export const useStockStore = defineStore("stock", {
       }
     },
 
-    // Acción para cambiar de página
+    // Método simplificado para cargar stocks ordenados
+    async loadSortedStocks(sortBy: string) {
+      this.loading = true;
+      this.error = null;
+      const targetPage = 1; // Al cambiar ordenamiento, volvemos a la primera página
+      
+      // Actualizar el campo de ordenamiento actual
+      this.currentSortField = sortBy;
+      
+      try {
+        // Determinar si hay un término de búsqueda activo que debemos preservar
+        let activeSearchQuery = '';
+        if (this.currentSearchType !== 'sortBy' && this.currentSearchType !== 'loadAll') {
+          activeSearchQuery = this.currentSearchQuery;
+        }
+        
+        // Llamar al servicio pasando el término de búsqueda activo si existe
+        const response = await searchStocks('sortBy', sortBy, targetPage, this.pagination.pageSize, activeSearchQuery);
+        
+        this.stocks = response.items;
+        this.pagination.currentPage = response.pagination.page;
+        this.pagination.pageSize = response.pagination.pageSize;
+        this.pagination.totalItems = response.pagination.totalItems;
+        this.pagination.totalPages = response.pagination.totalPages;
+        
+        // No actualizamos el tipo de búsqueda si ya había una búsqueda activa
+        if (this.currentSearchType === 'loadAll' || this.currentSearchType === 'sortBy') {
+          this.currentSearchType = 'sortBy';
+          this.currentSearchQuery = sortBy;
+        }
+      }
+      catch (error) {
+        this.error = "Error al cargar stocks ordenados";
+        this.stocks = [];
+        this.pagination.totalItems = 0;
+        this.pagination.totalPages = 0;
+      }
+      finally {
+        this.loading = false;
+      }
+    },
+
+    // Acción para cambiar de página que soporte ordenamiento
     async goToPage(page: number) {
       if (page < 1 || page > this.pagination.totalPages || page === this.pagination.currentPage) {
         return; // No hacer nada si la página es inválida o es la actual
       }
-      // Determinar si estamos en modo búsqueda o carga general
-      if (this.currentSearchType && this.currentSearchType !== 'loadAll' && this.currentSearchQuery) {
+      
+      // Determinar si estamos en modo ordenamiento, búsqueda o carga general
+      if (this.currentSearchType === 'sortBy' && this.currentSortField) {
+        // Determinar si hay un término de búsqueda activo que debemos preservar
+        let activeSearchQuery = '';
+        if (this.currentSearchQuery && this.currentSearchQuery !== this.currentSortField) {
+          activeSearchQuery = this.currentSearchQuery;
+        }
+        
+        // Usar searchStocks con el parámetro de búsqueda activa
+        await searchStocks('sortBy', this.currentSortField, page, this.pagination.pageSize, activeSearchQuery)
+          .then(response => {
+            this.stocks = response.items;
+            this.pagination.currentPage = response.pagination.page;
+            this.pagination.pageSize = response.pagination.pageSize;
+            this.pagination.totalItems = response.pagination.totalItems;
+            this.pagination.totalPages = response.pagination.totalPages;
+          })
+          .catch(() => {
+            this.error = "Error al cambiar página con ordenamiento";
+            this.stocks = [];
+          });
+      } 
+      else if (this.currentSearchType && this.currentSearchType !== 'loadAll' && this.currentSearchQuery) {
         // Recargar la búsqueda en la nueva página
         await this.searchStocks(this.currentSearchType, this.currentSearchQuery, page);
-      } else {
+      } 
+      else {
         // Recargar la lista general en la nueva página
         await this.loadStocks(page);
       }

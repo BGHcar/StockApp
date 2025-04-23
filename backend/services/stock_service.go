@@ -91,8 +91,45 @@ func (s *StockService) GetStocksByRatingTo(rating string, page, pageSize int) ([
 
 func (s *StockService) GetStocksByRatingFrom(rating string, page, pageSize int) ([]models.Stock, int, int, error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
 	stocks, totalItems, totalPages, err := s.repo.GetByRatingFrom(rating, page, pageSize)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	return stocks, totalItems, totalPages, nil
+}
+
+// Variables para almacenar el último sortBy y sortOrder
+var lastSortBy string = "time"
+var currentSortOrder string = "DESC"
+
+func (s *StockService) GetSortedStocks(sortBy string, search string, page, pageSize int) ([]models.Stock, int, int, error) {
+	page, pageSize = normalizePagination(page, pageSize)
+
+	// Si el sortBy es el mismo que el anterior, invertimos el orden
+	if sortBy == lastSortBy {
+		if currentSortOrder == "DESC" {
+			currentSortOrder = "ASC"
+		} else {
+			currentSortOrder = "DESC"
+		}
+	} else {
+		// Si es un nuevo campo de ordenación, usamos DESC por defecto
+		currentSortOrder = "DESC"
+		lastSortBy = sortBy
+	}
+
+	// Validar que sortBy sea un campo válido para evitar SQL injection
+	validFields := map[string]bool{
+		"ticker": true, "company": true, "target_from": true, "target_to": true,
+		"action": true, "brokerage": true, "rating_from": true, "rating_to": true, "time": true,
+	}
+
+	if !validFields[sortBy] {
+		sortBy = "time" // Valor predeterminado seguro si el campo no es válido
+		lastSortBy = sortBy
+	}
+
+	stocks, totalItems, totalPages, err := s.repo.GetSortedStocks(sortBy, currentSortOrder, search, page, pageSize)
 	if err != nil {
 		return nil, 0, 0, err
 	}
@@ -102,7 +139,6 @@ func (s *StockService) GetStocksByRatingFrom(rating string, page, pageSize int) 
 // GetStocksByBrokerage obtiene stocks por brokerage con paginación
 func (s *StockService) GetStocksByBrokerage(brokerage string, page, pageSize int) ([]models.Stock, int, int, error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
 	stocks, totalItems, totalPages, err := s.repo.GetByBrokerage(brokerage, page, pageSize)
 	if err != nil {
 		return nil, 0, 0, err
@@ -113,7 +149,6 @@ func (s *StockService) GetStocksByBrokerage(brokerage string, page, pageSize int
 // GetStocksByDateRange obtiene stocks por rango de fechas paginados
 func (s *StockService) GetStocksByDateRange(startDate, endDate time.Time, page, pageSize int) ([]models.Stock, int, int, error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
 	stocks, totalItems, totalPages, err := s.repo.GetByDateRange(startDate, endDate, page, pageSize)
 	if err != nil {
 		return nil, 0, 0, err
@@ -124,7 +159,6 @@ func (s *StockService) GetStocksByDateRange(startDate, endDate time.Time, page, 
 // GetStocksByCompany obtiene stocks por compañía con paginación
 func (s *StockService) GetStocksByCompany(company string, page, pageSize int) ([]models.Stock, int, int, error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
 	stocks, totalItems, totalPages, err := s.repo.GetByCompany(company, page, pageSize)
 	if err != nil {
 		return nil, 0, 0, err
@@ -143,10 +177,6 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 	log.Printf("Iniciando sincronización de datos a las %s",
 		startTime.Format("15:04:05"))
 
-	// Ya NO limpiamos la tabla antes de sincronizar
-	// En lugar de eso, marcaremos la fecha de sincronización para saber qué datos son nuevos
-	syncDate := time.Now()
-
 	// Recolectar datos de la API
 	stockItems, duplicates, err := s.collectAPIData()
 	if err != nil {
@@ -160,16 +190,80 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 	result.DuplicatesList = duplicates.items
 
 	// Convertir a modelos de dominio
-	stocks := s.convertToModels(stockItems)
+	newStocks := s.convertToModels(stockItems)
 
-	log.Printf("Iniciando inserción/actualización de %d registros...", len(stocks))
+	// Verificar si hay cambios reales antes de actualizar la base de datos
+	log.Printf("Verificando cambios en %d registros...", len(newStocks))
+
+	// Crear un mapa de los nuevos stocks para facilitar la comparación
+	newStocksMap := make(map[string]models.Stock)
+	for _, stock := range newStocks {
+		// Usar ticker+tiempo como clave única
+		key := fmt.Sprintf("%s_%s", stock.Ticker, stock.Time.Format(time.RFC3339))
+		newStocksMap[key] = stock
+	}
+
+	// Obtener todos los stocks existentes en los últimos X días
+	// Usamos un período más largo para asegurarnos de capturar todos los posibles registros a comparar
+	comparisonPeriod := 30 * 24 * time.Hour // 30 días
+	since := time.Now().Add(-comparisonPeriod)
+	existingStocks, err := s.repo.GetRecentRecommendations(since)
+	if err != nil {
+		return result, fmt.Errorf("error obteniendo datos existentes para comparación: %w", err)
+	}
+
+	// Crear mapa de stocks existentes
+	existingStocksMap := make(map[string]models.Stock)
+	for _, stock := range existingStocks {
+		key := fmt.Sprintf("%s_%s", stock.Ticker, stock.Time.Format(time.RFC3339))
+		existingStocksMap[key] = stock
+	}
+
+	// Identificar registros nuevos o modificados
+	var stocksToUpsert []models.Stock
+	for key, newStock := range newStocksMap {
+		existingStock, exists := existingStocksMap[key]
+		if !exists {
+			// El registro es completamente nuevo
+			stocksToUpsert = append(stocksToUpsert, newStock)
+		} else {
+			// El registro existe, verificar si hubo cambios en campos relevantes
+			if s.stockHasChanged(existingStock, newStock) {
+				stocksToUpsert = append(stocksToUpsert, newStock)
+			}
+		}
+	}
+
+	syncDate := time.Now()
+	if len(stocksToUpsert) == 0 {
+		log.Printf("No se detectaron cambios en los datos. No se realizarán actualizaciones.")
+
+		// Completar el resultado
+		result.TotalInserted = 0
+		result.FailedInserts = 0
+		result.UniqueTickersDB = len(existingStocksMap)
+
+		// Calcular tiempo total
+		totalDuration := time.Since(startTime)
+		log.Printf("Sincronización completada en %.2f segundos. No hubo cambios.",
+			totalDuration.Seconds())
+
+		// Resumen en log
+		s.logSyncSummary(result)
+
+		return result, nil
+	}
+
+	// Solo actualizamos los registros que han cambiado o son nuevos
+	log.Printf("Se detectaron %d registros nuevos o modificados de un total de %d",
+		len(stocksToUpsert), len(newStocks))
+	log.Printf("Iniciando actualización de %d registros...", len(stocksToUpsert))
+
 	insertStartTime := time.Now()
-
-	// Usar la inserción que maneja actualizaciones (upsert)
-	inserted, failedInserts, err := s.repo.UpsertStocksParallel(stocks, syncDate)
+	inserted, failedInserts, err := s.repo.UpsertStocksParallel(stocksToUpsert, syncDate)
 
 	insertDuration := time.Since(insertStartTime)
-	log.Printf("Operación completada en %.2f segundos",
+	log.Printf("Operación de actualización completada en %.2f segundos",
 		insertDuration.Seconds())
 
 	if err != nil {
@@ -179,7 +273,7 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 	// Completar el resultado
 	result.TotalInserted = inserted
 	result.FailedInserts = len(failedInserts)
-	result.UniqueTickersDB = inserted
+	result.UniqueTickersDB = len(existingStocksMap) + inserted - len(failedInserts)
 	result.FailedInsertDetails = failedInserts
 
 	// Calcular tiempo total
@@ -194,6 +288,19 @@ func (s *StockService) SyncStockData() (interfaces.SyncResult, error) {
 	s.logSyncSummary(result)
 
 	return result, nil
+}
+
+// stockHasChanged compara dos stocks y determina si hay cambios relevantes
+func (s *StockService) stockHasChanged(existingStock, newStock models.Stock) bool {
+	// Comparar campos que pueden cambiar
+	return existingStock.TargetFrom != newStock.TargetFrom ||
+		existingStock.TargetTo != newStock.TargetTo ||
+		existingStock.Action != newStock.Action ||
+		existingStock.Brokerage != newStock.Brokerage ||
+		existingStock.RatingFrom != newStock.RatingFrom ||
+		existingStock.RatingTo != newStock.RatingTo ||
+		existingStock.Company != newStock.Company
+	// No comparamos ID, CreatedAt, UpdatedAt o DeletedAt
 }
 
 // --- Métodos privados para descomponer la responsabilidad ---
@@ -324,11 +431,22 @@ func (s *StockService) logFailedInserts(failedInserts map[string]string) {
 // logSyncSummary muestra un resumen de la sincronización
 func (s *StockService) logSyncSummary(result interfaces.SyncResult) {
 	log.Println("\n===== INFORME DE SINCRONIZACIÓN =====")
-	log.Printf("Total elementos procesados: %d", result.TotalProcessed)
-	log.Printf("Total elementos insertados: %d", result.TotalInserted)
-	log.Printf("Errores de inserción: %d", result.FailedInserts)
+	log.Printf("Total elementos obtenidos de la API: %d", result.TotalProcessed)
+
+	if result.TotalInserted > 0 {
+		log.Printf("Total elementos actualizados/insertados: %d", result.TotalInserted)
+	} else {
+		log.Printf("No se detectaron cambios que requieran actualización")
+	}
+
+	if result.FailedInserts > 0 {
+		log.Printf("Errores de inserción: %d", result.FailedInserts)
+	} else {
+		log.Printf("No hubo errores de inserción")
+	}
+
 	log.Printf("Tickers únicos en API: %d", result.UniqueTickersAPI)
-	log.Printf("Tickers únicos insertados: %d", result.UniqueTickersDB)
+	log.Printf("Total registros en base de datos: %d", result.UniqueTickersDB)
 
 	if result.DuplicateTickers > 0 {
 		log.Printf("\n===== INFORME DE DUPLICADOS =====")
@@ -375,7 +493,6 @@ func (s *StockService) SearchStocks(query string, page, pageSize int) ([]models.
 // GetStocksByPriceRange obtiene stocks por rango de precios paginados
 func (s *StockService) GetStocksByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error) {
 	page, pageSize = normalizePagination(page, pageSize)
-	// Asegúrate que la llamada al repo maneje los 4 valores de retorno
 	stocks, totalItems, totalPages, err := s.repo.GetByPriceRange(minPrice, maxPrice, page, pageSize)
 	if err != nil {
 		return nil, 0, 0, err

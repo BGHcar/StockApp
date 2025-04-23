@@ -49,6 +49,7 @@ type StockRepository interface {
 	GetByCompany(company string, page, pageSize int) ([]models.Stock, int, int, error)
 	SearchStocks(query string, page, pageSize int) ([]models.Stock, int, int, error)
 	GetByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error)
+	GetSortedStocks(sortBy, sortOrder, search string, page, pageSize int) ([]models.Stock, int, int, error)
 
 	// --- Método para Recomendaciones ---
 	GetRecentRecommendations(since time.Time) ([]models.Stock, error) // Fetch recent stock data
@@ -79,6 +80,7 @@ type StockService interface {
 	SearchStocks(query string, page, pageSize int) ([]models.Stock, int, int, error)
 	GetStocksByBrokerage(brokerage string, page, pageSize int) ([]models.Stock, int, int, error)
 	GetStocksByDateRange(startDate, endDate time.Time, page, pageSize int) ([]models.Stock, int, int, error)
+	GetSortedStocks(sortBy, search string, page, pageSize int) ([]models.Stock, int, int, error)
 	GetStocksByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error)
 
 	// --- Método para Recomendaciones ---
