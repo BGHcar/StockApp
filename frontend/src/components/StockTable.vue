@@ -28,7 +28,7 @@
             <td v-for="header in headers"
                 :key="header.key"
                 :class="header.class">
-              {{ formatValue(stock, header.key) }} <!-- Usar función para formatear -->
+              {{ formatValue(stock, header.key) }}
             </td>
           </tr>
         </tbody>
