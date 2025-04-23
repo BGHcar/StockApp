@@ -5,6 +5,7 @@ import (
 	"backend/models"
 	"log"
 	"math" // Necesario para Ceiling
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -238,9 +239,16 @@ func (r *StockRepository) SearchStocks(query string, page, pageSize int) ([]mode
 func (r *StockRepository) GetByPriceRange(minPrice, maxPrice string, page, pageSize int) ([]models.Stock, int, int, error) {
 	var stocks []models.Stock
 	var totalCount int64
-	// NOTA: Esta consulta asume que target_from es un string que puede compararse directamente.
-	// Si necesitas comparación numérica, la lógica debe cambiar (posiblemente parseando en la DB o filtrando después).
-	query := r.db.DB().Model(&models.Stock{}).Where("target_from BETWEEN ? AND ?", minPrice, maxPrice)
+
+	// Convertir los valores de minPrice y maxPrice eliminando comas y el símbolo $
+	minPrice = strings.ReplaceAll(minPrice, ",", "")
+	minPrice = strings.ReplaceAll(minPrice, "$", "")
+	maxPrice = strings.ReplaceAll(maxPrice, ",", "")
+	maxPrice = strings.ReplaceAll(maxPrice, "$", "")
+
+	// Ajustar la consulta para considerar solo target_from dentro del rango
+	query := r.db.DB().Model(&models.Stock{}).
+		Where("CAST(REPLACE(REPLACE(target_from, '$', ''), ',', '') AS DECIMAL) BETWEEN ? AND ?", minPrice, maxPrice)
 
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, 0, err
