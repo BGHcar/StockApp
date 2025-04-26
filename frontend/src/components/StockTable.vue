@@ -78,6 +78,14 @@ function formatValue(stock: Stock, key: keyof Stock): string {
       hour: '2-digit', minute: '2-digit'
     });
   }
+  if (key === 'TargetTo' || key === 'TargetFrom') {
+    return `$${Number(value).toFixed(2)}`;
+  }
+
+  // Si es numérico (por ejemplo, 'score'), formatearlo con decimales
+  if (typeof value === 'number') {
+    return value.toFixed(2);
+  }
   // Devolver el valor como string para otras claves
   return String(value);
 }
