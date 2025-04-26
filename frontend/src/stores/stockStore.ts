@@ -69,12 +69,15 @@ export const useStockStore = defineStore("stock", {
 
       try {
         const response: PaginatedResponse<Stock> = await fetchStocks(targetPage, targetPageSize);
+        console.log("page:", response.pagination.page);
+        console.log("pageSize:", response.pagination.pageSize);
         this.stocks = response.items;
         this.pagination.currentPage = response.pagination.page;
         this.pagination.pageSize = response.pagination.pageSize;
         this.pagination.totalItems = response.pagination.totalItems;
         this.pagination.totalPages = response.pagination.totalPages;
       } catch (error) {
+        console.log("Error loading stocks:", error);
         this.error = "Failed to load stocks";
         this.stocks = []; // Limpiar stocks en caso de error
         this.pagination.totalItems = 0;

@@ -25,7 +25,7 @@ function buildUrlWithPagination(baseUrl: string, page: number, pageSize: number)
 
 export async function fetchStocks(page: number, pageSize: number): Promise<PaginatedResponse<Stock>> {
   try {
-    const url = buildUrlWithPagination(`${API_URL}/stocks`, page, pageSize);
+    const url = buildUrlWithPagination(`${API_URL}/stocks/all`, page, pageSize);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Error al obtener stocks: ${response.status}`);
     const data: PaginatedResponse<Stock> = await response.json();

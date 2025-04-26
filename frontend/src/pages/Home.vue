@@ -17,9 +17,7 @@
         {{ stockStore.error }}
       </div>
       <div v-else class="components-wrapper">
-        <!-- Pasar los stocks de la página actual a StockTable -->
         <StockTable :stocks="stockStore.stocks" :headers="tableHeaders" class="table-container" />
-        <!-- StockRecommendations ahora obtiene datos de su propio store -->
       </div>
       <StockRecommendations class="recommendations-container" />
     </div>
@@ -31,27 +29,26 @@ import { onMounted } from 'vue'
 import { useStockStore } from '@/stores/stockStore'
 import StockTable from '@/components/StockTable.vue'
 import StockSearch from '@/components/StockSearch.vue'
-import StockRecommendations from '@/components/StockRecommendations.vue' // Asegúrate que la ruta sea correcta
+import StockRecommendations from '@/components/StockRecommendations.vue'
 import type { TableHeader } from '@/types/table'
 
 const stockStore = useStockStore()
 
 const tableHeaders: TableHeader[] = [
-  { key: 'ticker', label: 'Ticker', class: 'w-[8%]' },
-  { key: 'company', label: 'Compañía', class: 'w-[15%]' },
-  { key: 'brokerage', label: 'Brokerage', class: 'w-[15%]' },
-  { key: 'action', label: 'Acción', class: 'w-[12%]' },
-  { key: 'rating_from', label: 'Rating Ant.', class: 'w-[10%]' }, // Había un label vacío aquí
-  { key: 'rating_to', label: 'Rating Act.', class: 'w-[10%]' },
-  { key: 'target_from', label: 'Precio Desde', class: 'w-[10%]' },
-  { key: 'target_to', label: 'Precio Hasta', class: 'w-[10%]' },
-  // { key: 'time', label : 'Fecha', class: 'w-[10%]' }, // Descomentar si quieres mostrarla
+  { key: 'Ticker', label: 'Ticker', class: 'w-[8%]' },
+  { key: 'Company', label: 'Compañía', class: 'w-[15%]' },
+  { key: 'Brokerage', label: 'Brokerage', class: 'w-[15%]' },
+  { key: 'Action', label: 'Acción', class: 'w-[12%]' },
+  { key: 'RatingFrom', label: 'Rating Ant.', class: 'w-[10%]' }, 
+  { key: 'RatingTo', label: 'Rating Act.', class: 'w-[10%]' },
+  { key: 'TargetFrom', label: 'Precio Desde', class: 'w-[10%]' },
+  { key: 'TargetTo', label: 'Precio Hasta', class: 'w-[10%]' },
+  { key: 'Time', label : 'Fecha', class: 'w-[10%]' }, 
 ]
 
 onMounted(() => {
   // Cargar la primera página al montar
   stockStore.loadStocks(1, stockStore.pagination.pageSize);
-  // No necesitas cargar recomendaciones aquí, el componente lo hace
 })
 
 // Llamar a la acción de búsqueda del store

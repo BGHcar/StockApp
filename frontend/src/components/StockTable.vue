@@ -19,7 +19,7 @@
             <td :colspan="headers.length" class="no-data-cell">No hay datos para mostrar en esta página.</td>
           </tr>
           <!-- Renderizar filas de stocks -->
-          <tr v-for="stock in props.stocks" :key="stock.ticker + stock.time" v-else>
+          <tr v-for="stock in props.stocks" :key="stock.Ticker + stock.Time" v-else>
             <td v-for="header in headers" :key="header.key" :class="header.class">
               {{ formatValue(stock, header.key) }}
             </td>
@@ -70,7 +70,7 @@ const currentSortIndicator = computed(() => '▼'); // Siempre mostramos triáng
 // Función para formatear valores (incluyendo fechas)
 function formatValue(stock: Stock, key: keyof Stock): string {
   const value = stock[key];
-  if (key === 'time') {
+  if (key === 'Time') {
     const date = new Date(value as string);
     if (isNaN(date.getTime())) return value as string; // Devolver original si no es fecha válida
     return date.toLocaleDateString('es-ES', {
@@ -88,7 +88,7 @@ async function handleSort(field: keyof Stock) {
   // Pasamos el campo de ordenamiento y preservamos la búsqueda actual si existe
   if (stockStore.currentSearchType !== 'sortBy' && stockStore.currentSearchType !== 'loadAll') {
     // Si hay una búsqueda activa que no es de ordenamiento, enviar la consulta actual
-    await stockStore.loadSortedStocks(field as string, stockStore.currentSearchQuery);
+    await stockStore.loadSortedStocks(field as string);
   } else {
     // Si no hay búsqueda o ya estamos en modo ordenamiento, solo enviar el campo
     await stockStore.loadSortedStocks(field as string);

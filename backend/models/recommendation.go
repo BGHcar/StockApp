@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-// Recommendation represents a stock recommendation with a score.
 type Recommendation struct {
 	Ticker     string    `json:"ticker"`
 	Company    string    `json:"company"`     // Include company name for better context
